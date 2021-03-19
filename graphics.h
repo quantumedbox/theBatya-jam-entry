@@ -2,6 +2,10 @@
 
 #include "typedef.h"
 
+#include "shader_handler.h"
+// #include "engine.h"
+
+const uint SpriteSize = 24;
 const GLfloat Sprite[] = {
 	// Verticies	// Texture coords
 	-0.5, -0.5,		0.0, 0.0,
@@ -13,18 +17,19 @@ const GLfloat Sprite[] = {
 };
 
 typedef enum Layouts {
-	// 2 vertex positions, 2 texture coords follow
+	// 2 vertex positions,
+	// 2 texture coords follow
 	VT2_TX2,
 }
-PrimitiveDataLayout;
+GeometryDataLayout;
 
 typedef struct
 {
 	GLfloat* vertexData;
-	PrimitiveDataLayout vertexLayout;
+	GeometryDataLayout vertexLayout;
 	uint sizeOfData;
 }
-Primitive;
+Geometry;
 
 // Stores texture sheet data for sprites
 typedef struct
@@ -38,7 +43,7 @@ TextureObj;
 typedef struct
 {
 	GLuint renderProgram;
-	GLfloat* vertexData;
+	Geometry* geometry;
 	TextureObj* textureObj;
 	uint frame;
 }
@@ -47,6 +52,16 @@ RenderObj;
 RenderObj* newRenderObj()
 {
 	RenderObj* new = (RenderObj*)malloc(sizeof(RenderObj));
+	new->renderProgram = 0;
+	new->geometry = NULL;
+	new->textureObj = NULL;
+	new->frame = 0;
 
 	return new;
+}
+
+void delRenderObj(RenderObj* obj)
+{
+	free(obj->textureObj);
+	free(obj);
 }

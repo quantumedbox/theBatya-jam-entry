@@ -18,7 +18,7 @@ SceneObjType;
 
 typedef struct
 {
-	Iter* iter;				// All game objects that should be processed
+	Iter* objs;				// All game objects that should be processed
 }
 Scene;
 
@@ -53,15 +53,23 @@ typedef struct
 }
 Engine;
 
+
+Scene* newScene();
+GameObj* newGameObj();
+SceneObj* addSceneObj(Scene* scene, SceneObjType type);
+void delScene(Scene* scene);
+void delGameObj(GameObj* obj);
+void freeEngineResources(Engine* engine);
+
+
 Scene* newScene()
 {
 	Scene* new = (Scene*)malloc(sizeof(Scene));
-	new->iter = (Iter*)malloc(sizeof(Iter));
-
+	new->objs = newIter();
 	return new;
 }
 
-void addSceneObj(Scene* scene, SceneObjType type)
+SceneObj* addSceneObj(Scene* scene, SceneObjType type)
 {
 	SceneObj* new = (SceneObj*)malloc(sizeof(SceneObj));
 	new->type = type;
@@ -70,7 +78,7 @@ void addSceneObj(Scene* scene, SceneObjType type)
 		new->scene = newScene();
 		break;
 	case GameObjType:
-		new->obj->renderObj = newRenderObj();
+		new->obj = newGameObj();
 		break;
 	case LogicType:
 		// TODO
@@ -78,4 +86,62 @@ void addSceneObj(Scene* scene, SceneObjType type)
 	default:
 		WARNING(CREATED_UNKNOWN_SCENEOBJ_TYPE);
 	}
+
+	logf("adding scene_obj at %p to scene %p\n", new, scene->objs);
+	addIter(scene->objs, new);
+
+	return new;
+}
+
+GameObj* newGameObj()
+{
+	GameObj* new = (GameObj*)malloc(sizeof(GameObj));
+	new->renderObj = newRenderObj();
+	return new;
+}
+
+void delScene(Scene* scene)
+{
+	logf("deleting scene at %p\n", scene);
+
+	if (lenIter(scene->objs) == 0) {
+		free(scene);
+		return;
+	}
+	startIter(scene->objs);
+	int remains;
+	do {
+		SceneObj* obj = (SceneObj*)nextIter(scene->objs);
+		logf("freeing scene_obj at %p\n", obj);
+
+		switch (obj->type) {
+		case NestedSceneType:
+			delScene(obj->scene);
+			break;
+		case GameObjType:
+			delGameObj(obj->obj);
+			break;
+		case LogicType:
+			// TODO
+			break;
+		default:
+			WARNING(UNKNOWN_SCENEOBJ_TYPE);
+		}
+
+		remains = remainsIter(scene->objs);
+	}
+	while (remains != 0);
+
+	free(scene);
+}
+
+void delGameObj(GameObj* obj)
+{
+	if (obj->renderObj != NULL)
+		delRenderObj(obj->renderObj);
+}
+
+void freeEngineResources(Engine* engine)
+{
+	delScene(engine->mainScene);
 }

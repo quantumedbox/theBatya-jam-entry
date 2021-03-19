@@ -4,6 +4,7 @@
 
 #define CONTACT_ME
 #ifdef RELEASE
+#undef CONTACT_ME
 #define CONTACT_ME printf("please, contact me at ... and tell about the problem!\n");
 #endif
 
@@ -30,13 +31,14 @@ char* ERRORTEXT[] = {
 
 typedef enum warning {
 	CREATED_UNKNOWN_SCENEOBJ_TYPE,
+	UNKNOWN_SCENEOBJ_TYPE,
 }
 Warning_T;
 
 char* WARNINGTEXT[] = {
 	"created screen object with unknown type\n",
+	"encountered unknown type object in the scene and it was ignored\n",
 };
-
 
 void WARNING(Warning_T warn_code)
 {

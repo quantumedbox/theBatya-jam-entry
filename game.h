@@ -2,9 +2,16 @@
 #include "graphics.h"
 #include "engine.h"
 
+#include "scene_obj.h"
+
 void gameLoop(Engine engine)
 {
 	engine.mainScene = newScene();
+
+	GLint program = initRenderProgram("shaders/base_vertex.vert", "shaders/base_fragment.frag");
+
+	SceneObj* obj = addSceneObj(engine.mainScene, GameObjType);
+	obj_setRenderProgram(obj, program);
 
 	while (!glfwWindowShouldClose(engine.window_ptr))
 	{
@@ -19,4 +26,6 @@ void gameLoop(Engine engine)
 		glfwSwapBuffers(engine.window_ptr);
 		glfwPollEvents();
 	}
+
+	freeEngineResources(&engine);
 }

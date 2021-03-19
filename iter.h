@@ -46,7 +46,7 @@ Iter* newIter()
 void addIter(Iter* iter, void* data)
 {
 	if (iter->next == NULL) {
-		iter->next = newIter(data);
+		iter->next = newIter();
 		iter->next->data = data;
 	} else
 		addIter(iter->next, data);
@@ -60,7 +60,7 @@ void printIter(Iter* iter)
 
 static void _printIter(Iter* iter, int i)
 {
-	printf("%d: data at %p, next: %p\n", i, iter->data, iter->next);
+	logf("%d: data at %p, next: %p\n", i, iter->data, iter->next);
 	if (iter->next != NULL)
 		_printIter(iter->next, ++i);
 }

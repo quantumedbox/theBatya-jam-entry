@@ -8,9 +8,18 @@
 // #define RELEASE
 #define DEBUG
 
+#define logf(fmt, ...) printf(fmt, __VA_ARGS__);
+
 #ifdef RELEASE
-#define STRICT_RUNTIME
+#undef logf
+#define logf //
+#define STRICT_RUNTIME	// don't ignore any errors
 #endif
+
+const char* afterText = "Thanks for playing!\n"\
+"Source code for the game is freely available on github:\n"\
+"https://github.com/quantumedbox/theBatya-jam-entry\n\n"\
+"press any key to close this prompt\n";
 
 #include "errors.h"
 #include "typedef.h"
@@ -74,7 +83,7 @@ void appClosure(void)
 {
 	glfwTerminate();
 	#ifdef RELEASE
-		printf("thanks for playing!");
+		printf(afterText);
 		getchar();
 	#endif
 }
