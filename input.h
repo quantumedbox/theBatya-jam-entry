@@ -1,3 +1,5 @@
+#pragma once
+
 #define MAX_N_KEYS 128
 
 #include "iter.h"

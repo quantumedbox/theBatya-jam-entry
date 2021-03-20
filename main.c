@@ -78,6 +78,8 @@ void initOpenGL(void)
 	if ((err = glewInit()) != GLEW_OK) {
 		OPENGL_ERROR(GLEW_INIT_ERR, err);
 	}
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_MULTISAMPLE);
 }
 
 void appClosure(void)

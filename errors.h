@@ -16,6 +16,7 @@ typedef enum error {
 	COMPILING_SHADER_ERR,
 	LINKING_SHADER_ERR,
 	ITER_ACCESS_OUTOFBOUNDS_ERR,
+	TEXTURE_LOADING_ERR,
 }
 Error_T;
 
@@ -27,12 +28,14 @@ char* ERRORTEXT[] = {
 	"error occured while compiling shader\n",
 	"error occured while linking shader\n",
 	"iterator access violation, index is out of size for a given iter\n",
+	"error occured while loading texture\n",
 };
 
 typedef enum warning {
 	CREATED_UNKNOWN_SCENEOBJ_TYPE,
 	UNKNOWN_SCENEOBJ_TYPE,
 	UNKNOWN_KEY_WARN,
+	SETTING_OBJ_OF_INCOMPATIBLE_TYPE_WARN,
 }
 Warning_T;
 
@@ -40,6 +43,7 @@ char* WARNINGTEXT[] = {
 	"created screen object with unknown type\n",
 	"encountered unknown type object in the scene and it was ignored\n",
 	"unknown key type\n",
+	"setting the value for incompatible obj type\n",
 };
 
 void WARNING(Warning_T warn_code)

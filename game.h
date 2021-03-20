@@ -1,11 +1,10 @@
+#include <stdlib.h>
+
 #include "typedef.h"
 #include "graphics.h"
 #include "camera.h"
 #include "engine.h"
-
 #include "scene_obj.h"
-
-#include <stdlib.h>
 
 void game_keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void game_cursorPosCallback(GLFWwindow* window, double x, double y);
@@ -13,16 +12,15 @@ void game_windowResizeCallback(GLFWwindow* window, int width, int height);
 void game_initFreecamLayount(KeyLayout* layout);
 
 
-KeyLayout* 	gameKeyboardLayout;
-Camera*		gameCamera;
+Engine* gameEngine;
 
 
 void gameLoop(Engine engine)
 {
+	glfwSetInputMode(engine.window_ptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	initPredefinedGeometry();
 
-	gameKeyboardLayout = engine.keyLayout;
-	gameCamera = engine.camera;
+	gameEngine = &engine;
 
 	game_initFreecamLayount(engine.keyLayout);
 
@@ -33,18 +31,24 @@ void gameLoop(Engine engine)
 	engine.mainScene = newScene();
 
 	GLint program = newRenderProgram("shaders/base_vertex.vert", "shaders/base_fragment.frag");
+	TextureObj* texture = newTextureObj("Fire 16x.png", 16, 16);
 
 	SceneObj* scene = addSceneObj(engine.mainScene, NestedSceneType);
-	SceneObj* obj = addSceneObj(scene->scene, GameObjType);
-	obj_setRenderProgram(obj, program);
-	obj_setGeometry(obj, &Sprite);
-	obj_setPosition(scene, (vec3){0.0, 0.0, 0.0});
+
+	for (int i = 25; i--;)
+	{
+		SceneObj* obj = addSceneObj(scene->scene, GameObjType);
+		obj_setRenderProgram(obj, program);
+		obj_setGeometry(obj, &Sprite);
+		obj_setPosition(obj, (vec3){rand()%25, rand()%25, rand()%25});
+		obj_setTextureObj(obj, texture);
+	}
 
 	while (!glfwWindowShouldClose(engine.window_ptr))
 	{
 		updateFrameTime();
 
-		obj->obj->position[1] -= 0.0001;
+		scene->scene->position[0] -= 0.0001;
 
 		glClearColor(
 			engine.graphicsPref.clearColor[0],
@@ -73,7 +77,7 @@ void gameLoop(Engine engine)
 
 void game_keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	KeyBinding* bind = keyLayout_processKey(gameKeyboardLayout, key);
+	KeyBinding* bind = keyLayout_processKey(gameEngine->keyLayout, key);
 	if (bind == NULL)
 		return;
 
@@ -92,7 +96,7 @@ void game_cursorPosCallback(GLFWwindow* window, double x, double y)
 	static double last_x;
 	static double last_y;
 
-	cam_updateCursor(gameCamera, x - last_x, y - last_y);
+	cam_updateCursor(gameEngine->camera, x - last_x, y - last_y);
 	last_x = x;
 	last_y = y;
 }
@@ -100,7 +104,9 @@ void game_cursorPosCallback(GLFWwindow* window, double x, double y)
 void game_windowResizeCallback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
-	cam_updatePerspective(gameCamera, (float)width / height);
+	cam_updatePerspective(gameEngine->camera, (float)width / height);
+	gameEngine->screen_width = width;
+	gameEngine->screen_height = height;
 }
 
 void game_initFreecamLayount(KeyLayout* layout)

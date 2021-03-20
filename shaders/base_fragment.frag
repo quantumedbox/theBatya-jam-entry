@@ -4,7 +4,13 @@ out vec4 fColor;
 
 in vec2 fTextureCoords;
 
+uniform sampler2D bindedTexture;
+uniform vec2 subtextureCoords;
+
 void main()
 {
-	fColor = vec4(1.0, 0.0, 0.0, 1.0);	// test
+	fColor = texture(bindedTexture, fTextureCoords);
+
+	if (fColor.a < 0.1)
+		discard;
 }

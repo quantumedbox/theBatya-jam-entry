@@ -3,11 +3,12 @@
 #include "typedef.h"
 #include "rendering_pipeline.h"
 #include "camera.h"
+#include "texture_load.h"
 
 const uint SpriteSize = 30;
 const uint SpriteVertexCount = 6;
 const GLfloat SpriteVertexData[] = {
-// Verticies		// TexCoords
+  // Verticies		 // TexCoords
 	-0.5, -0.5, 0.0,	0.0, 0.0,
 	+0.5, -0.5, 0.0,	1.0, 0.0,
 	+0.5, +0.5, 0.0,	1.0, 1.0,
@@ -15,24 +16,6 @@ const GLfloat SpriteVertexData[] = {
 	+0.5, +0.5, 0.0,	1.0, 1.0,
 	-0.5, +0.5,	0.0,	0.0, 1.0,
 };
-
-typedef enum Layouts {
-	// 3 vertex positions,
-	// 2 texture coords follow
-	VT3_TX2,
-}
-GeometryDataLayout;
-
-typedef struct
-{
-	const GLfloat* vertexData;
-	GeometryDataLayout vertexLayout;
-	uint sizeOfData;
-	uint vertexCount;
-	GLuint VAO, VBO;
-}
-Geometry;
-
 
 Geometry Sprite = {
 	.vertexData = SpriteVertexData,
@@ -46,28 +29,12 @@ Geometry* _PREDEFINED_GEOMETRY = {
 	&Sprite
 };
 
+RenderObj* newRenderObj(void);
+void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera);
+void renderObjRelativeTo(RenderObj* obj, vec3 relative_to, vec3 pos, vec3 orientation, Camera* camera);
 
-// Stores texture sheet data for sprites
-typedef struct
-{
-	GLuint texture;	// Pointer to GPU buffer
-	uvec2 size;		// Width / Height in texels
-	uvec2 subSize;	// Width / Height for each subtexture
-}
-TextureObj;
-
-#define NO_RENDER_PROGRAM 0
-typedef struct
-{
-	GLuint renderProgram;
-	Geometry* geometry;
-	TextureObj* textureObj;
-	uint frame;
-}
-RenderObj;
-
-
-void setIdentityMatForRotation(mat4 mat);
+void initPredefinedGeometry(void);
+// void setIdentityMatForRotation(mat4 mat);
 
 
 RenderObj* newRenderObj(void)
@@ -83,6 +50,7 @@ RenderObj* newRenderObj(void)
 
 void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 {
+	// State machine for skipping unnecessary bindings for similar objects
 	static Geometry* currentGeometryBind;
 	static GLuint currentRenderProgramBind;
 	static TextureObj* currentTextureObject;
@@ -107,7 +75,7 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 
 		glUseProgram(obj->renderProgram);
 		OPENGL_CHECK("(renderObj) In the proccess of render program binding");
-		// ??? Maybe matrix layout should be fixed for each render program ???
+		// ??? Maybe matrix layout should be fixed for each shader ???
 		modelMatAddress = glGetUniformLocation(obj->renderProgram, "model");
 		viewMatAddress = glGetUniformLocation(obj->renderProgram, "view");
 		projectionMatAddress = glGetUniformLocation(obj->renderProgram, "projection");
@@ -118,6 +86,9 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 														 obj->textureObj != NULL)
 	{
 		currentTextureObject = obj->textureObj;
+
+		glBindTexture(GL_TEXTURE_2D, obj->textureObj->texture_ptr);
+		OPENGL_CHECK("(renderObj) Cannot bind texture object");
 	}
 
 	mat4 modelMat = GLM_MAT4_IDENTITY_INIT;
@@ -125,6 +96,7 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 		// vec3 lookUpVe = GLM_VEC3_ZERO_INIT;
 		// glm_vec3_negate_to(camera->cameraUp, lookUpVe);
 
+	// Bilboarding
 	vec3 lookAt = GLM_VEC3_ZERO_INIT;
 	glm_vec3_sub(camera->cameraPos, pos, lookAt);
 	glm_lookat(GLM_VEC3_ZERO, lookAt, (vec3){0.0, -1.0, 0.0}, modelMat);
@@ -150,7 +122,7 @@ void renderObjRelativeTo(RenderObj* obj, vec3 relative_to, vec3 pos, vec3 orient
 
 __forceinline void delRenderObj(RenderObj* obj)
 {
-	// free(obj->textureObj);	// GC should count the amount of references and delete shader objects depending on it
+	// free(obj->textureObj);	// GC-like object should count the amount of references and delete shader objects depending on it
 	free(obj);
 }
 
@@ -191,7 +163,11 @@ void initPredefinedGeometry(void)
 // 	mat[0][0] = 0; mat[0][1] = 0; mat[0][2] = 1; 
 // }
 
-void newTextureObj()
+TextureObj* newTextureObj(char* textureDir, uint subWidth, uint subHeight)
 {
-	
+	TextureObj* new = (TextureObj*)malloc(sizeof(TextureObj));
+	populateTextureObjFromFile(new, textureDir);
+	new->subSize[0] = subWidth;
+	new->subSize[1] = subHeight;
+	return new;
 }

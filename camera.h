@@ -64,11 +64,12 @@ void cam_updateDirection(Camera* cam)
 
 void cam_updatePerspective(Camera* cam, float screenRatio)
 {
-	glm_perspective(
-		glm_rad(cam->fov), screenRatio,
-		NEAR_CLIPPING_PLANE, FAR_CLIPPING_PLANE,
-		cam->projection
-	);
+	glm_ortho_default_s(screenRatio, 5.0, cam->projection);
+	// glm_perspective(
+	// 	glm_rad(cam->fov), screenRatio,
+	// 	NEAR_CLIPPING_PLANE, FAR_CLIPPING_PLANE,
+	// 	cam->projection
+	// );
 }
 
 // Freecam implementation

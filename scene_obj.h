@@ -3,21 +3,37 @@
 
 void obj_setRenderProgram(SceneObj* obj, GLuint program)
 {
+	if (obj->type != GameObjType) {
+		WARNING(SETTING_OBJ_OF_INCOMPATIBLE_TYPE_WARN);
+		return;
+	}
 	obj->obj->renderObj->renderProgram = program;
 }
 
 void obj_setGeometry(SceneObj* obj, Geometry* geometry)
 {
+	if (obj->type != GameObjType) {
+		WARNING(SETTING_OBJ_OF_INCOMPATIBLE_TYPE_WARN);
+		return;
+	}
 	obj->obj->renderObj->geometry = geometry;
 }
 
 void obj_setTextureObj(SceneObj* obj, TextureObj* textureObj)
 {
+	if (obj->type != GameObjType) {
+		WARNING(SETTING_OBJ_OF_INCOMPATIBLE_TYPE_WARN);
+		return;
+	}
 	obj->obj->renderObj->textureObj = textureObj;
 }
 
 void obj_setFrame(SceneObj* obj, uint frame)
 {
+	if (obj->type != GameObjType) {
+		WARNING(SETTING_OBJ_OF_INCOMPATIBLE_TYPE_WARN);
+		return;
+	}
 	obj->obj->renderObj->frame = frame;
 }
 
