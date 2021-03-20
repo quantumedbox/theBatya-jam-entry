@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -68,7 +70,7 @@ void linkShaderProgram(GLuint program, unsigned char n, ...)
 	}
 }
 
-GLuint initRenderProgram(char* vertexDir, char* fragmentDir)
+GLuint newRenderProgram(char* vertexDir, char* fragmentDir)
 {
 	GLuint vertexShader, fragmentShader;
 	char *vertexShaderCode = loadShaderFromFile(vertexDir);

@@ -25,7 +25,7 @@ Scene;
 typedef struct
 {
 	RenderObj* renderObj;	// NULL if not rendered
-	vec3 pos;
+	vec3 position;
 	vec3 orientation;
 }
 GameObj;
@@ -48,19 +48,35 @@ typedef struct
 	uint screen_width, screen_height;
 
 	GraphicsPreferences graphicsPref;
-	KeyLayout* KeyLayout;
+	KeyLayout* keyLayout;
+
+	Camera* camera;
 	Scene* mainScene;	// Entry point for game object login
 }
 Engine;
 
 
+void initEngine(Engine* engine, uint width, uint height);
 Scene* newScene();
 GameObj* newGameObj();
 SceneObj* addSceneObj(Scene* scene, SceneObjType type);
+void renderScene(Scene* scene);
 void delScene(Scene* scene);
 void delGameObj(GameObj* obj);
 void freeEngineResources(Engine* engine);
 
+
+void initEngine(Engine* engine, uint width, uint height)
+{
+	engine->screen_width = width;
+	engine->screen_height = height;
+
+	engine->camera = (Camera*)malloc(sizeof(Camera));
+	cam_init(engine->camera);
+	cam_updatePerspective(engine->camera, (float)width / height);
+
+	engine->keyLayout = keyLayout_new();
+}
 
 Scene* newScene()
 {
@@ -144,4 +160,36 @@ void delGameObj(GameObj* obj)
 void freeEngineResources(Engine* engine)
 {
 	delScene(engine->mainScene);
+}
+
+void renderScene(Scene* scene)
+{
+	if (lenIter(scene->objs) == 0)
+		return;
+
+	startIter(scene->objs);
+	int remains;
+	do {
+		SceneObj* obj = (SceneObj*)nextIter(scene->objs);
+
+		switch (obj->type) {
+		case NestedSceneType:
+			renderScene(obj->scene);
+			break;
+		case GameObjType:
+			renderObj(
+				obj->obj->renderObj,
+				obj->obj->position,
+				obj->obj->orientation
+			);
+			break;
+		case LogicType:
+			break;	// Ignore for rendering
+		default:
+			WARNING(UNKNOWN_SCENEOBJ_TYPE);
+		}
+
+		remains = remainsIter(scene->objs);
+	}
+	while (remains != 0);
 }

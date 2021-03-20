@@ -29,20 +29,18 @@ void keyLayout_bindNewKey(KeyLayout* layout, int key, int action, int type)
 	addIter(layout->keyBindings, (void*)bind);
 }
 
-void keyLayout_initDefault(KeyLayout* layout)
+KeyLayout* keyLayout_new(void)
 {
-	keyLayout_bindNewKey(layout, -1, -1, UNKNOWN_KEY);
-
-	// keyLayout_bindNewKey(layout, GLFW_KEY_W, MOVE_FORWARD, MOVEMENT_KEY);
-	// keyLayout_bindNewKey(layout, GLFW_KEY_S, MOVE_BACKWARD, MOVEMENT_KEY);
-	// keyLayout_bindNewKey(layout, GLFW_KEY_A, MOVE_LEFT, MOVEMENT_KEY);
-	// keyLayout_bindNewKey(layout, GLFW_KEY_D, MOVE_RIGHT, MOVEMENT_KEY);
-	// keyLayout_bindNewKey(layout, GLFW_KEY_LEFT_SHIFT, MOVE_DOWN, MOVEMENT_KEY);
-	// keyLayout_bindNewKey(layout, GLFW_KEY_SPACE, MOVE_UP, MOVEMENT_KEY);
+	KeyLayout* new = (KeyLayout*)malloc(sizeof(KeyLayout));
+	new->keyBindings = newIter();
+	return new;
 }
 
 KeyBinding* keyLayout_processKey(KeyLayout* layout, int target_key)
 {
+	if (lenIter(layout->keyBindings) == 0)
+		return NULL;	// Uninitialized keyLayout, maybe it should give a error
+
 	startIter(layout->keyBindings);
 	int remains;
 	do {
@@ -53,5 +51,5 @@ KeyBinding* keyLayout_processKey(KeyLayout* layout, int target_key)
 	}
 	while (remains);
 
-	return indexedIter(layout->keyBindings, 0);
+	return NULL;		// No corresponding keys in given layout
 }

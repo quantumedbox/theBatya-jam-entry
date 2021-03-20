@@ -7,6 +7,7 @@
 
 // #define RELEASE
 #define DEBUG
+// #define LOG_IN_FILE	// TODO define it to save all the log in the file rather than print on console
 
 #define logf(fmt, ...) printf(fmt, __VA_ARGS__);
 
@@ -17,9 +18,10 @@
 #endif
 
 const char* afterText = "Thanks for playing!\n"\
-"Source code for the game is freely available on github:\n"\
+"The game was fully written in just 2 days in pure C!\n"\
+"BTW, Source code is freely available on github:\n"\
 "https://github.com/quantumedbox/theBatya-jam-entry\n\n"\
-"press any key to close this prompt\n";
+"press any key to close this prompt...";
 
 #include "errors.h"
 #include "typedef.h"
@@ -33,10 +35,9 @@ void appClosure(void);
 int main(void)
 {
 	Engine gameEngine;
-	// Defaults:
-	gameEngine.screen_width = 600;
-	gameEngine.screen_height = 600;
+	initEngine(&gameEngine, 600, 600);
 
+	// Defaults:
 	gameEngine.graphicsPref.clearColor[0] = 0.0f;
 	gameEngine.graphicsPref.clearColor[1] = 0.0f;
 	gameEngine.graphicsPref.clearColor[2] = 0.0f;

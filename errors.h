@@ -32,12 +32,14 @@ char* ERRORTEXT[] = {
 typedef enum warning {
 	CREATED_UNKNOWN_SCENEOBJ_TYPE,
 	UNKNOWN_SCENEOBJ_TYPE,
+	UNKNOWN_KEY_WARN,
 }
 Warning_T;
 
 char* WARNINGTEXT[] = {
 	"created screen object with unknown type\n",
 	"encountered unknown type object in the scene and it was ignored\n",
+	"unknown key type\n",
 };
 
 void WARNING(Warning_T warn_code)
@@ -64,6 +66,17 @@ void LOG_ERROR(Error_T error_code, char* log)
 	printf(">returning with the code 0x%x\n", error_code);
 	exit(error_code);
 	#endif
+}
+
+void OPENGL_CHECK(char* description)
+{
+	GLenum err;
+	if ((err = glGetError()) != GL_NO_ERROR) {
+		printf("OPENGL ERROR :: CODE %d\n%s\n", err, description);
+		#ifdef STRICT_RUNTIME
+		exit(0);
+		#endif
+	}
 }
 
 void EXIT_ERROR(Error_T error_code)
