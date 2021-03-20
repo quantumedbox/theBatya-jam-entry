@@ -150,7 +150,7 @@ static void* _nextIter(Iter* iter)
 void* indexedIter(Iter* iter, int index)
 {
 	int i = index;
-	if (index < 0)
+	if (index < 0)	// Python-like negative index access
 		i = lenIter(iter) + index - 1;
 	if (0 <= i && i < lenIter(iter) && lenIter(iter) != 0)
 		return _indexedIter(iter->next, -1, i);

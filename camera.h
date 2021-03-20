@@ -1,7 +1,7 @@
+#pragma once
+
 #include <math.h>
-
 #include <cglm/cglm.h>
-
 #include "elapsed_time.h"
 
 #define NEAR_CLIPPING_PLANE 0.1f
@@ -83,13 +83,12 @@ enum movementStates {
 
 uint8_t movementState;	// ? should we store it outside cam struct or not
 
-void cam_setInputState(int type, _Bool state)
+__forceinline void cam_setInputState(int type, _Bool state)
 {
 	if (state == true)
 		movementState |= 1U << (int)log2(type);
 	else
 		movementState &= ~(1U << (int)log2(type));
-	printf("state: %d\n", movementState);
 }
 
 void cam_processInput(Camera* cam)
@@ -137,7 +136,7 @@ void cam_processMovement(Camera* cam)
 	glm_vec3_sub(cam->velocityVector, lerp_velocity, cam->velocityVector);
 }
 
-void cam_updateCursor(Camera* cam, double x_change, double y_change)
+__forceinline void cam_updateCursor(Camera* cam, double x_change, double y_change)
 {
 	if (x_change) {
 		cam->yaw += x_change * CONST_MOUSE_SENSETIVITY;

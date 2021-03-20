@@ -3,6 +3,7 @@
 #include "graphics.h"
 #include "iter.h"
 #include "input.h"
+#include "camera.h"
 
 typedef struct {
 	uvec3 clearColor;		// Base color of the screen
@@ -19,6 +20,7 @@ SceneObjType;
 typedef struct
 {
 	Iter* objs;				// All game objects that should be processed
+	vec3 position;				// Origin point for all object within the scene
 }
 Scene;
 
@@ -60,7 +62,7 @@ void initEngine(Engine* engine, uint width, uint height);
 Scene* newScene();
 GameObj* newGameObj();
 SceneObj* addSceneObj(Scene* scene, SceneObjType type);
-void renderScene(Scene* scene);
+void renderScene(Scene* scene, Camera* camera);
 void delScene(Scene* scene);
 void delGameObj(GameObj* obj);
 void freeEngineResources(Engine* engine);
@@ -78,10 +80,11 @@ void initEngine(Engine* engine, uint width, uint height)
 	engine->keyLayout = keyLayout_new();
 }
 
-Scene* newScene()
+__forceinline Scene* newScene()
 {
 	Scene* new = (Scene*)malloc(sizeof(Scene));
 	new->objs = newIter();
+	new->position[0] = new->position[1] = new->position[2] = 0;
 	return new;
 }
 
@@ -109,10 +112,11 @@ SceneObj* addSceneObj(Scene* scene, SceneObjType type)
 	return new;
 }
 
-GameObj* newGameObj()
+__forceinline GameObj* newGameObj()
 {
 	GameObj* new = (GameObj*)malloc(sizeof(GameObj));
 	new->renderObj = newRenderObj();
+	new->position[0] = new->position[1] = new->position[2] = 0;
 	return new;
 }
 
@@ -157,12 +161,12 @@ void delGameObj(GameObj* obj)
 		delRenderObj(obj->renderObj);
 }
 
-void freeEngineResources(Engine* engine)
+__forceinline void freeEngineResources(Engine* engine)
 {
 	delScene(engine->mainScene);
 }
 
-void renderScene(Scene* scene)
+void renderScene(Scene* scene, Camera* camera)
 {
 	if (lenIter(scene->objs) == 0)
 		return;
@@ -174,13 +178,15 @@ void renderScene(Scene* scene)
 
 		switch (obj->type) {
 		case NestedSceneType:
-			renderScene(obj->scene);
+			renderScene(obj->scene, camera);
 			break;
 		case GameObjType:
-			renderObj(
+			renderObjRelativeTo(
 				obj->obj->renderObj,
+				scene->position,
 				obj->obj->position,
-				obj->obj->orientation
+				obj->obj->orientation,
+				camera
 			);
 			break;
 		case LogicType:

@@ -5,6 +5,8 @@
 
 #include "scene_obj.h"
 
+#include <stdlib.h>
+
 void game_keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void game_initFreecamLayount(KeyLayout* layout);
 
@@ -24,9 +26,27 @@ void gameLoop(Engine engine)
 
 	GLint program = newRenderProgram("shaders/base_vertex.vert", "shaders/base_fragment.frag");
 
-	SceneObj* obj = addSceneObj(engine.mainScene, GameObjType);
+	SceneObj* scene = addSceneObj(engine.mainScene, NestedSceneType);
+	SceneObj* obj = addSceneObj(scene->scene, GameObjType);
 	obj_setRenderProgram(obj, program);
 	obj_setGeometry(obj, &Sprite);
+
+	// for (int i = 1000; i--;) 
+	// {
+	// SceneObj* obj = addSceneObj(engine.mainScene, GameObjType);
+	// obj_setRenderProgram(obj, program);
+	// obj_setGeometry(obj, &Sprite);
+	// obj_setPosition(obj, (vec3){rand()%25, rand()%10, rand()%25});
+	// }
+
+	// SceneObj* obj = addSceneObj(engine.mainScene, GameObjType);
+	// obj_setRenderProgram(obj, program);
+	// obj_setGeometry(obj, &Sprite);
+
+	// SceneObj* obj2 = addSceneObj(engine.mainScene, GameObjType);
+	// obj_setRenderProgram(obj2, program);
+	// obj_setGeometry(obj2, &Sprite);
+	// obj_setPosition(obj2, (vec3){5, 0, 0});
 
 	while (!glfwWindowShouldClose(engine.window_ptr))
 	{
@@ -46,14 +66,7 @@ void gameLoop(Engine engine)
 		cam_processInput(engine.camera);
 		cam_processMovement(engine.camera);
 
-		// printf(
-		// 	"{%lf, %lf, %lf}\n",
-		// 	engine.camera->cameraPos[0],
-		// 	engine.camera->cameraPos[1],
-		// 	engine.camera->cameraPos[2]
-		// );
-
-		renderScene(engine.mainScene);
+		renderScene(engine.mainScene, engine.camera);
 
 		glfwSwapBuffers(engine.window_ptr);
 		glfwPollEvents();

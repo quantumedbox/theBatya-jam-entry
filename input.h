@@ -39,7 +39,7 @@ KeyLayout* keyLayout_new(void)
 KeyBinding* keyLayout_processKey(KeyLayout* layout, int target_key)
 {
 	if (lenIter(layout->keyBindings) == 0)
-		return NULL;	// Uninitialized keyLayout, maybe it should give a error
+		return NULL;	// Uninitialized keyLayout, maybe it should give an error
 
 	startIter(layout->keyBindings);
 	int remains;
