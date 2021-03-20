@@ -67,6 +67,9 @@ typedef struct
 RenderObj;
 
 
+void setIdentityMatForRotation(mat4 mat);
+
+
 RenderObj* newRenderObj(void)
 {
 	RenderObj* new = (RenderObj*)malloc(sizeof(RenderObj));
@@ -118,10 +121,19 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 	}
 
 	mat4 modelMat = GLM_MAT4_IDENTITY_INIT;
-	glm_translate(modelMat, pos);
-	// TODO Rotation to orientation vector
+	// Camera-relative lookUp axis
+		// vec3 lookUpVe = GLM_VEC3_ZERO_INIT;
+		// glm_vec3_negate_to(camera->cameraUp, lookUpVe);
 
-	glUniformMatrix4fv(viewMatAddress, 1, GL_FALSE, camera->view[0]);
+	vec3 lookAt = GLM_VEC3_ZERO_INIT;
+	glm_vec3_sub(camera->cameraPos, pos, lookAt);
+	glm_lookat(GLM_VEC3_ZERO, lookAt, (vec3){0.0, -1.0, 0.0}, modelMat);
+
+	mat4 viewMat = GLM_MAT4_IDENTITY_INIT;
+	glm_mat4_copy(camera->view, viewMat);
+	glm_translate(viewMat, pos);
+
+	glUniformMatrix4fv(viewMatAddress, 1, GL_FALSE, viewMat[0]);
 	glUniformMatrix4fv(projectionMatAddress, 1, GL_FALSE, camera->projection[0]);
 	glUniformMatrix4fv(modelMatAddress, 1, GL_FALSE, modelMat[0]);
 
@@ -170,4 +182,16 @@ void initPredefinedGeometry(void)
 	}
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+}
+
+// void setIdentityMatForRotation(mat4 mat)
+// {
+// 	mat[0][0] = 1; mat[0][1] = 0; mat[0][2] = 0; 
+// 	mat[0][0] = 0; mat[0][1] = 1; mat[0][2] = 0; 
+// 	mat[0][0] = 0; mat[0][1] = 0; mat[0][2] = 1; 
+// }
+
+void newTextureObj()
+{
+	
 }

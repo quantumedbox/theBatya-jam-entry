@@ -178,7 +178,7 @@ void renderScene(Scene* scene, Camera* camera)
 
 		switch (obj->type) {
 		case NestedSceneType:
-			renderScene(obj->scene, camera);
+			renderScene(obj->scene, camera);	// TODO Nested scene's pos should be modified by its parent pos
 			break;
 		case GameObjType:
 			renderObjRelativeTo(
