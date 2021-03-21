@@ -14,7 +14,6 @@ void main()
 		subtextureCoords.y + subtextureSize.y * fTextureCoords.y
 	);
 	fColor = texture(bindedTexture, actualTextureCoords);
-	// fColor = vec4(subtextureCoords.x, 0.0, 0.0, 1.0);
 	if (fColor.a < 0.1)
 		discard;
 }

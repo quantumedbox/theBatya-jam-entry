@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// TODO Top of the stack should be HEADER object that holds cashes and stuff
+// We should'n have to walk through the whole structure each time we want to iterate to the next
+
 // Generic data pointer iterator
 // it doesn't work with values directly,
 // all the casts to types should be explicit

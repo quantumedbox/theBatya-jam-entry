@@ -44,9 +44,12 @@ RenderObj* newRenderObj(void)
 	new->renderProgram = NO_RENDER_PROGRAM;
 	new->geometry = NULL;
 	new->textureObj = NULL;
+
+	new->scale = 1.0f;
+
 	new->frame = 0;
 	new->frameCount = 0;
-	new->animationSpeed = 1;
+	new->animationSpeed = 1;	// Default is frame per second
 
 	return new;
 }
@@ -107,6 +110,7 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 	vec3 lookAt = GLM_VEC3_ZERO_INIT;
 	glm_vec3_sub(camera->cameraPos, pos, lookAt);
 	glm_lookat(GLM_VEC3_ZERO, lookAt, (vec3){0.0, -1.0, 0.0}, modelMat);
+	glm_scale_uni(modelMat, obj->scale);
 
 	mat4 viewMat = GLM_MAT4_IDENTITY_INIT;
 	glm_mat4_copy(camera->view, viewMat);
@@ -185,7 +189,11 @@ TextureObj* newTextureObj(char* textureDir, uint subWidth, uint subHeight)
 	TextureObj* new = (TextureObj*)malloc(sizeof(TextureObj));
 	populateTextureObjFromFile(new, textureDir);
 
-	new->subSize[0] = subWidth; new->subSize[1] = subHeight;
+	if (subWidth == 0)	new->subSize[0] = new->size[0];
+	else 				new->subSize[0] = subWidth;
+	if (subHeight == 0) new->subSize[1] = new->size[1];
+	else 				new->subSize[1] = subHeight;
+
 	return new;
 }
 

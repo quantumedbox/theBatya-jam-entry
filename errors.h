@@ -5,7 +5,7 @@
 #define CONTACT_ME
 #ifdef RELEASE
 #undef CONTACT_ME
-#define CONTACT_ME printf("please, contact me at ... and tell about the problem!\n");
+#define CONTACT_ME printf("please, report the issue at https://github.com/quantumedbox/theBatya-jam-entry!\nI will be grateful\n");
 #endif
 
 typedef enum error {

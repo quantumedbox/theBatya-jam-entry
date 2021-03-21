@@ -19,7 +19,7 @@
 
 const char* afterText = "Thanks for playing!\n"\
 "The game was fully written in just 2 days in pure C!\n"\
-"BTW, Source code is freely available on github:\n"\
+"BTW, source code is freely available at github:\n"\
 "https://github.com/quantumedbox/theBatya-jam-entry\n\n"\
 "press any key to close this prompt...";
 

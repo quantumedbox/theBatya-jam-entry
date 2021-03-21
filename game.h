@@ -31,17 +31,24 @@ void gameLoop(Engine engine)
 	engine.mainScene = newScene();
 
 	GLint program = newRenderProgram("shaders/base_vertex.vert", "shaders/base_fragment.frag");
-	TextureObj* texture = newTextureObj("Fire16x.png", 16, 16);
+	TextureObj* fire_texture = newTextureObj("assets/Fire16x.png", 16, 16);
+	TextureObj* table_texture = newTextureObj("assets/table.gif", 0, 0);
 
 	SceneObj* scene = addSceneObj(engine.mainScene, NestedSceneType);
+	SceneObj* table = addSceneObj(engine.mainScene, GameObjType);
+	obj_setRenderProgram(table, program);
+	obj_setGeometry(table, &Sprite);
+	obj_setTextureObj(table, table_texture);
+	obj_setScale(table, 10.f);
 
 	for (int i = 25; i--;)
 	{
 		SceneObj* obj = addSceneObj(scene->scene, GameObjType);
+		// TODO State machine for single declaration of obj properties for the new
 		obj_setRenderProgram(obj, program);
 		obj_setGeometry(obj, &Sprite);
 		obj_setPosition(obj, (vec3){rand()%25, 0, rand()%25});
-		obj_setTextureObj(obj, texture);
+		obj_setTextureObj(obj, fire_texture);
 		obj_setFrame(obj, rand()%9);
 	}
 

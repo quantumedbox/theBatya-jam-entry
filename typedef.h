@@ -42,6 +42,9 @@ typedef struct
 	GLuint renderProgram;
 	Geometry* geometry;
 	TextureObj* textureObj;
+
+	float scale;
+
 	float frame;
 	uint frameCount;
 	float animationSpeed;
