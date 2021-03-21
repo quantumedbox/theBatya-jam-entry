@@ -31,7 +31,7 @@ void gameLoop(Engine engine)
 	engine.mainScene = newScene();
 
 	GLint program = newRenderProgram("shaders/base_vertex.vert", "shaders/base_fragment.frag");
-	TextureObj* texture = newTextureObj("Fire 16x.png", 16, 16);
+	TextureObj* texture = newTextureObj("Fire16x.png", 16, 16);
 
 	SceneObj* scene = addSceneObj(engine.mainScene, NestedSceneType);
 
@@ -40,8 +40,9 @@ void gameLoop(Engine engine)
 		SceneObj* obj = addSceneObj(scene->scene, GameObjType);
 		obj_setRenderProgram(obj, program);
 		obj_setGeometry(obj, &Sprite);
-		obj_setPosition(obj, (vec3){rand()%25, rand()%25, rand()%25});
+		obj_setPosition(obj, (vec3){rand()%25, 0, rand()%25});
 		obj_setTextureObj(obj, texture);
+		obj_setFrame(obj, rand()%9);
 	}
 
 	while (!glfwWindowShouldClose(engine.window_ptr))

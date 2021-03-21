@@ -31,8 +31,8 @@ Geometry;
 typedef struct
 {
 	GLuint texture_ptr;	// Pointer to texture buffer
-	uvec2 size;		// Width / Height in texels
-	uvec2 subSize;	// Width / Height for each subtexture
+	uvec2 size;			// Width / Height in texels
+	uvec2 subSize;		// Width / Height for each subtexture
 }
 TextureObj;
 
@@ -42,13 +42,14 @@ typedef struct
 	GLuint renderProgram;
 	Geometry* geometry;
 	TextureObj* textureObj;
-	uint frame;
+	float frame;
+	uint frameCount;
 	float animationSpeed;
 }
 RenderObj;
 
 typedef struct {
-	uvec3 clearColor;		// Base color of the screen
+	uvec3 clearColor;	// Base color of the screen
 }
 GraphicsPreferences;
 
@@ -61,8 +62,8 @@ SceneObjType;
 
 typedef struct
 {
-	Iter* objs;				// All game objects that should be processed
-	vec3 position;			// Origin point for all object within the scene
+	Iter* objs;			// All game objects that should be processed
+	vec3 position;		// Origin point for all object within the scene
 }
 Scene;
 

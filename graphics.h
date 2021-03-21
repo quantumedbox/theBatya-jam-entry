@@ -32,6 +32,7 @@ Geometry* _PREDEFINED_GEOMETRY = {
 RenderObj* newRenderObj(void);
 void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera);
 void renderObjRelativeTo(RenderObj* obj, vec3 relative_to, vec3 pos, vec3 orientation, Camera* camera);
+__forceinline void getFrameTextureCoords(uint frame, TextureObj* texObj, vec2 write_to);
 
 void initPredefinedGeometry(void);
 // void setIdentityMatForRotation(mat4 mat);
@@ -44,6 +45,8 @@ RenderObj* newRenderObj(void)
 	new->geometry = NULL;
 	new->textureObj = NULL;
 	new->frame = 0;
+	new->frameCount = 0;
+	new->animationSpeed = 1;
 
 	return new;
 }
@@ -58,6 +61,8 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 	static GLint modelMatAddress;
 	static GLint viewMatAddress;
 	static GLint projectionMatAddress;
+	static GLint subtextureCoordsAddress;
+	static GLint subtextureSizeAddress;
 
 	if ((currentGeometryBind != obj->geometry || currentGeometryBind == NULL)
 													&& obj->geometry != NULL)
@@ -74,12 +79,14 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 		currentRenderProgramBind = obj->renderProgram;
 
 		glUseProgram(obj->renderProgram);
-		OPENGL_CHECK("(renderObj) In the proccess of render program binding");
-		// ??? Maybe matrix layout should be fixed for each shader ???
+		OPENGL_CHECK("(renderObj) Cannot bind given render program");
+
 		modelMatAddress = glGetUniformLocation(obj->renderProgram, "model");
 		viewMatAddress = glGetUniformLocation(obj->renderProgram, "view");
 		projectionMatAddress = glGetUniformLocation(obj->renderProgram, "projection");
-		OPENGL_CHECK("(renderObj) Cannot get matrix uniform locations");
+		subtextureCoordsAddress = glGetUniformLocation(obj->renderProgram, "subtextureCoords");
+		subtextureSizeAddress = glGetUniformLocation(obj->renderProgram, "subtextureSize");
+		OPENGL_CHECK("(renderObj) Cannot get shader uniform locations");
 	}
 
 	if ((currentTextureObject != obj->textureObj || currentTextureObject == NULL) &&
@@ -108,6 +115,16 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 	glUniformMatrix4fv(viewMatAddress, 1, GL_FALSE, viewMat[0]);
 	glUniformMatrix4fv(projectionMatAddress, 1, GL_FALSE, camera->projection[0]);
 	glUniformMatrix4fv(modelMatAddress, 1, GL_FALSE, modelMat[0]);
+
+	vec2 texCoords;
+	getFrameTextureCoords((uint)obj->frame, obj->textureObj, texCoords);
+
+	vec2 texSubSize;
+	texSubSize[0] = (float)obj->textureObj->subSize[0] / obj->textureObj->size[0];
+	texSubSize[1] = (float)obj->textureObj->subSize[1] / obj->textureObj->size[1];
+
+	glUniform2f(subtextureCoordsAddress, texCoords[0], texCoords[1]);
+	glUniform2f(subtextureSizeAddress, texSubSize[0], texSubSize[1]);
 
 	glDrawArrays(GL_TRIANGLES, 0, obj->geometry->vertexCount);
 	OPENGL_CHECK("(renderObj) While drawing triangles from buffers");
@@ -167,7 +184,20 @@ TextureObj* newTextureObj(char* textureDir, uint subWidth, uint subHeight)
 {
 	TextureObj* new = (TextureObj*)malloc(sizeof(TextureObj));
 	populateTextureObjFromFile(new, textureDir);
-	new->subSize[0] = subWidth;
-	new->subSize[1] = subHeight;
+
+	new->subSize[0] = subWidth; new->subSize[1] = subHeight;
 	return new;
+}
+
+__forceinline void getFrameTextureCoords(uint frame, TextureObj* texObj, vec2 write_to)
+{
+	uint width = texObj->size[0] / texObj->subSize[0];
+	// uint height = texObj->size[1] / texObj->subSize[1];
+
+	int x = frame % width;
+	int y = frame / width;
+
+	if (width == 0) EXIT_ERROR(ZERO_SIZED_TEXTURE_ERR);
+	write_to[0] = x / (float)width;
+	write_to[1] = 1 - (float)texObj->subSize[1] / texObj->size[1] * (y + 1);
 }

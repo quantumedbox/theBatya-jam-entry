@@ -6,6 +6,8 @@ void populateTextureObjFromFile(TextureObj* obj, char* dir)
 	GLuint texture;
 	glGenTextures(1, &texture);
 
+	obj->texture_ptr = texture;
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -13,9 +15,7 @@ void populateTextureObjFromFile(TextureObj* obj, char* dir)
 	// stbi_set_flip_vertically_on_load(1);
 	unsigned char *imagedata = stbi_load(dir, &width, &height, &channels, 0);
 
-	obj->size[0] = width;
-	obj->size[1] = height;
-	obj->texture_ptr = texture;
+	obj->size[0] = width; obj->size[1] = height;
 
 	if (!imagedata) {
 		FILE_ERROR(TEXTURE_LOADING_ERR, dir);

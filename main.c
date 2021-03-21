@@ -26,6 +26,8 @@ const char* afterText = "Thanks for playing!\n"\
 #include "errors.h"
 #include "typedef.h"
 
+#define ANIMATIONS
+
 #include "game.h"
 
 GLFWwindow* initScreen(uint width, uint height);

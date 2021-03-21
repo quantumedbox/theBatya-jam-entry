@@ -4,6 +4,7 @@
 #include <inttypes.h>
 
 uint64_t timeDelta;
+uint64_t curTime;
 
 static uint64_t _getSeconds(void)
 {
@@ -20,6 +21,7 @@ void updateFrameTime(void)
 	if (prevFrameTime)
 		timeDelta = time - prevFrameTime;
 	prevFrameTime = time;
+	curTime = time;
 }
 
 double getFrameTime(void)

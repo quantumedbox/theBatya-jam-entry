@@ -10,6 +10,7 @@ Scene* newScene();
 GameObj* newGameObj();
 SceneObj* addSceneObj(Scene* scene, SceneObjType type);
 void renderScene(Scene* scene, Camera* camera);
+void processAnimations(Scene* scene);
 void delScene(Scene* scene);
 void delGameObj(GameObj* obj);
 void freeEngineResources(Engine* engine);
@@ -102,7 +103,7 @@ void delScene(Scene* scene)
 	free(scene);
 }
 
-void delGameObj(GameObj* obj)
+__forceinline void delGameObj(GameObj* obj)
 {
 	if (obj->renderObj != NULL)
 		delRenderObj(obj->renderObj);
@@ -117,6 +118,10 @@ void renderScene(Scene* scene, Camera* camera)
 {
 	if (lenIter(scene->objs) == 0)
 		return;
+
+	#ifdef ANIMATIONS
+	processAnimations(scene);
+	#endif
 
 	startIter(scene->objs);
 	int remains;
@@ -142,6 +147,27 @@ void renderScene(Scene* scene, Camera* camera)
 			WARNING(UNKNOWN_SCENEOBJ_TYPE);
 		}
 
+		remains = remainsIter(scene->objs);
+	}
+	while (remains != 0);
+}
+
+void processAnimations(Scene* scene)
+{
+	startIter(scene->objs);
+	int remains;
+	do {
+		SceneObj* obj = (SceneObj*)nextIter(scene->objs);
+
+		switch (obj->type) {
+		case GameObjType:
+			obj->obj->renderObj->frame += (float)timeDelta / 1000 * obj->obj->renderObj->animationSpeed;
+			if (obj->obj->renderObj->frame >= obj->obj->renderObj->frameCount)
+				obj->obj->renderObj->frame = 0.0f;
+			break;
+		default:
+			continue;
+		}
 		remains = remainsIter(scene->objs);
 	}
 	while (remains != 0);

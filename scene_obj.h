@@ -26,6 +26,8 @@ void obj_setTextureObj(SceneObj* obj, TextureObj* textureObj)
 		return;
 	}
 	obj->obj->renderObj->textureObj = textureObj;
+	obj->obj->renderObj->frameCount = textureObj->size[0] / textureObj->subSize[0] * \
+									  textureObj->size[1] / textureObj->subSize[1];
 }
 
 void obj_setFrame(SceneObj* obj, uint frame)

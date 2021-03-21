@@ -17,6 +17,7 @@ typedef enum error {
 	LINKING_SHADER_ERR,
 	ITER_ACCESS_OUTOFBOUNDS_ERR,
 	TEXTURE_LOADING_ERR,
+	ZERO_SIZED_TEXTURE_ERR,
 }
 Error_T;
 
@@ -29,6 +30,7 @@ char* ERRORTEXT[] = {
 	"error occured while linking shader\n",
 	"iterator access violation, index is out of size for a given iter\n",
 	"error occured while loading texture\n",
+	"zero sized texture. possibly something wrong with the texture or its loading\n",
 };
 
 typedef enum warning {
