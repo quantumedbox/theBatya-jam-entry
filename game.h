@@ -39,7 +39,7 @@ void gameLoop(Engine engine)
 	obj_setRenderProgram(table, program);
 	obj_setGeometry(table, &Sprite);
 	obj_setTextureObj(table, table_texture);
-	obj_setScale(table, 10.f);
+	obj_setScalePlaneRelative(table, 10.f);
 
 	for (int i = 25; i--;)
 	{

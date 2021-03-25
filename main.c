@@ -3,13 +3,14 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include "freetype.h"
 #include <cglm/cglm.h>
 
 // #define RELEASE
 #define DEBUG
 // #define LOG_IN_FILE	// TODO define it to save all the log in the file rather than print on console
 
-#define logf(fmt, ...) printf(fmt, __VA_ARGS__);
+#define logf(fmt, ...) printf(fmt, __VA_ARGS__);	// TODO should be replaced with fprintf to stderr
 
 #ifdef RELEASE
 #undef logf

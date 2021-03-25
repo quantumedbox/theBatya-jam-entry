@@ -48,6 +48,16 @@ void obj_setScale(SceneObj* obj, float scale)
 	obj->obj->renderObj->scale = scale;
 }
 
+void obj_setScalePlaneRelative(SceneObj* obj, float scale)
+{
+	if (obj->type != GameObjType) {
+		WARNING(SETTING_OBJ_OF_INCOMPATIBLE_TYPE_WARN);
+		return;
+	}
+	obj->obj->renderObj->scale = scale;
+	obj->obj->position[1] += scale / 2;
+}
+
 void obj_setPosition(SceneObj* obj, vec3 pos)
 {
 	if (obj->type == GameObjType) {
