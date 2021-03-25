@@ -65,7 +65,7 @@ SceneObjType;
 
 typedef struct
 {
-	Iter* objs;			// All game objects that should be processed
+	Iterable* objs;			// All game objects that should be processed
 	vec3 position;		// Origin point for all object within the scene
 }
 Scene;

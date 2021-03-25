@@ -72,14 +72,10 @@ void delScene(Scene* scene)
 {
 	logf("deleting scene at %p\n", scene);
 
-	if (lenIter(scene->objs) == 0) {
-		free(scene);
-		return;
-	}
-	startIter(scene->objs);
-	int remains;
-	do {
-		SceneObj* obj = (SceneObj*)nextIter(scene->objs);
+	Iterator* iter = getIterator(scene->objs);
+	while (iter->remains)
+	{
+		SceneObj* obj = next_iterator_of_type(iter, SceneObj);
 		logf("freeing scene_obj at %p\n", obj);
 
 		switch (obj->type) {
@@ -95,10 +91,7 @@ void delScene(Scene* scene)
 		default:
 			WARNING(UNKNOWN_SCENEOBJ_TYPE);
 		}
-
-		remains = remainsIter(scene->objs);
 	}
-	while (remains != 0);
 
 	free(scene);
 }
@@ -116,17 +109,14 @@ __forceinline void freeEngineResources(Engine* engine)
 
 void renderScene(Scene* scene, Camera* camera)
 {
-	if (lenIter(scene->objs) == 0)
-		return;
-
 	#ifdef ANIMATIONS
 	processAnimations(scene);
 	#endif
 
-	startIter(scene->objs);
-	int remains;
-	do {
-		SceneObj* obj = (SceneObj*)nextIter(scene->objs);
+	Iterator* iter = getIterator(scene->objs);
+	while (iter->remains)
+	{
+		SceneObj* obj = next_iterator_of_type(iter, SceneObj);
 
 		switch (obj->type) {
 		case NestedSceneType:
@@ -146,18 +136,15 @@ void renderScene(Scene* scene, Camera* camera)
 		default:
 			WARNING(UNKNOWN_SCENEOBJ_TYPE);
 		}
-
-		remains = remainsIter(scene->objs);
 	}
-	while (remains != 0);
 }
 
 void processAnimations(Scene* scene)
 {
-	startIter(scene->objs);
-	int remains;
-	do {
-		SceneObj* obj = (SceneObj*)nextIter(scene->objs);
+	Iterator* iter = getIterator(scene->objs);
+	while (iter->remains)
+	{
+		SceneObj* obj = next_iterator_of_type(iter, SceneObj);
 
 		switch (obj->type) {
 		case GameObjType:
@@ -168,7 +155,5 @@ void processAnimations(Scene* scene)
 		default:
 			continue;
 		}
-		remains = remainsIter(scene->objs);
 	}
-	while (remains != 0);
 }

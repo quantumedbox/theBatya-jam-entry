@@ -18,7 +18,7 @@ KeyBinding;
 
 typedef struct
 {
-	Iter* keyBindings;
+	Iterable* keyBindings;
 }
 KeyLayout;
 
@@ -40,18 +40,15 @@ KeyLayout* keyLayout_new(void)
 
 KeyBinding* keyLayout_processKey(KeyLayout* layout, int target_key)
 {
-	if (lenIter(layout->keyBindings) == 0)
-		return NULL;	// Uninitialized keyLayout, maybe it should give an error
+	if (layout->keyBindings->len == 0)
+		return NULL;	// Uninitialized keyLayout, maybe it should give an error instead
 
-	startIter(layout->keyBindings);
-	int remains;
-	do {
-		KeyBinding* bind = (KeyBinding*)nextIter(layout->keyBindings);
+	Iterator* iter = getIterator(layout->keyBindings);
+	while (iter->remains)
+	{
+		KeyBinding* bind = next_iterator_of_type(iter, KeyBinding);
 		if (bind->key == target_key)
 			return bind;
-		remains = remainsIter(layout->keyBindings);
 	}
-	while (remains);
-
 	return NULL;		// No corresponding keys in given layout
 }
