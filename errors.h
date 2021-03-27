@@ -4,8 +4,8 @@
 
 #define CONTACT_ME
 #ifdef RELEASE
-#undef CONTACT_ME
-#define CONTACT_ME printf("please, report the issue at https://github.com/quantumedbox/theBatya-jam-entry!\nI will be grateful\n");
+#	undef CONTACT_ME
+#	define CONTACT_ME printf("please, report the issue at https://github.com/quantumedbox/theBatya-jam-entry!\nI will be grateful\n");
 #endif
 
 typedef enum error {
@@ -112,4 +112,10 @@ void FILE_ERROR(Error_T error_code, char* dir)
 	CONTACT_ME
 	printf(">returning with the code 0x%x\n", error_code);
 	exit(error_code);
+}
+
+void WSAERROR(char* description, int wsa_error)
+{
+	printf("WSAERROR :: CODE %d\n%s\n", wsa_error, description);
+	exit(wsa_error);
 }

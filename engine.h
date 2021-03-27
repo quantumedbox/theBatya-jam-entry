@@ -4,6 +4,7 @@
 #include "iter.h"
 #include "input.h"
 #include "camera.h"
+#include "networking.h"
 
 void initEngine(Engine* engine, uint width, uint height);
 Scene* newScene();
@@ -75,7 +76,7 @@ void delScene(Scene* scene)
 	Iterator* iter = getIterator(scene->objs);
 	while (iter->remains)
 	{
-		SceneObj* obj = next_iterator_of_type(iter, SceneObj);
+		SceneObj* obj = next_iteration_of_type(iter, SceneObj);
 		logf("freeing scene_obj at %p\n", obj);
 
 		switch (obj->type) {
@@ -116,7 +117,7 @@ void renderScene(Scene* scene, Camera* camera)
 	Iterator* iter = getIterator(scene->objs);
 	while (iter->remains)
 	{
-		SceneObj* obj = next_iterator_of_type(iter, SceneObj);
+		SceneObj* obj = next_iteration_of_type(iter, SceneObj);
 
 		switch (obj->type) {
 		case NestedSceneType:
@@ -144,7 +145,7 @@ void processAnimations(Scene* scene)
 	Iterator* iter = getIterator(scene->objs);
 	while (iter->remains)
 	{
-		SceneObj* obj = next_iterator_of_type(iter, SceneObj);
+		SceneObj* obj = next_iteration_of_type(iter, SceneObj);
 
 		switch (obj->type) {
 		case GameObjType:

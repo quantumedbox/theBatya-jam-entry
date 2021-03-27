@@ -7,9 +7,21 @@
 #define DEFAULT_MAX_ITER_LEN -1	// Negative == unlimited
 #endif
 
+// TODO Функциональный метод итерации, приспосабливаемый к любым типам данных
+
 #define malloc_type(type) (type*)malloc(sizeof(type))
 
-#define next_iterator_of_type(iter, type) (type*)nextIterator(iter)
+#define next_iteration_of_type(iter, type) (type*)nextIterator(iter)
+
+/*	Usage:
+
+	Iterator* it = getIterator(i);
+	while (it->remains)
+	{
+		Type* obj = next_iteration_of_type(it, Type);
+	}
+
+*/
 
 // --------------------------------------------------------------- Type definitions -- //
 
@@ -55,13 +67,13 @@ Iterable* 	newIter		();
 	void 	printIter 	(Iterable* i);
 
 // Iteration functions
-Iterator* 	getIterator	(Iterable* i);
+Iterator* 	getIterator	(Iterable* i);						// Get iterator from iterable
   data_t 	nextIterator(Iterator* it);
 
 #define     _S 	static 	// Internal realisation
 _S  void 	_clearIter 	(IterElem* ie);
 _S  void 	_printIter 	(IterElem* i, int32_t idx);
-_S IterElem*_indexIterElem (Iterable* i, uint32_t idx);
+_S IterElem*_indexIterElem 		(Iterable* i,  uint32_t idx);
 _S IterElem*_indexElemRecursive	(IterElem* ie, uint32_t cur, uint32_t idx);
 #undef _S
 
@@ -74,6 +86,7 @@ Iterable* newIter()	// New iterable
 	new->last   	= NULL;
 	new->penult 	= NULL;
 	new->len 		= 0;
+	new->limit		= DEFAULT_MAX_ITER_LEN;
 
 	return new;
 }
@@ -150,11 +163,34 @@ data_t popIter(Iterable* i)
 	return return_data;
 }
 
+// Pull the first element from Iter
+// WARNING! free() on data should be called manually
+data_t pullIter(Iterable* i)
+{
+	if (i->first == NULL)
+		return NULL;
+
+	data_t return_data = i->first->data;
+	IterElem* new_first = i->first->next;
+	free(i->first);
+	i->first = new_first;
+
+	if (new_first == i->last) 	  i->penult = NULL;
+	else if (new_first == NULL)	  i->last = NULL;
+
+	return return_data;
+}
+
 void clearIter(Iterable* i)
 {
 	if (i->first == NULL)
 		return;
 	_clearIter(i->first);
+
+	i->first 	= NULL;
+	i->last 	= NULL;
+	i->penult 	= NULL;
+	i->len 		= 0;
 }
 
 void _clearIter(IterElem* ie)
@@ -191,6 +227,7 @@ static IterElem* _indexElemRecursive(IterElem* ie, uint32_t cur, uint32_t idx)
 		return _indexElemRecursive(ie->next, ++cur, idx);
 	else
 		EXIT_ERROR(ITER_ACCESS_OUTOFBOUNDS_ERR);
+
 	return NULL;
 }
 
