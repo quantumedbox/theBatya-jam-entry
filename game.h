@@ -39,7 +39,7 @@ void gameLoop(Engine engine)
 	obj_setTextureObj(table, table_texture);
 	obj_setScalePlaneRelative(table, 10.f);
 
-	for (int i = 25; i--;)
+	for (int i = 5; i--;)
 	{
 		SceneObj* obj = addSceneObj(scene->scene, GameObjType);
 		// TODO State machine for single declaration of obj properties for the new
