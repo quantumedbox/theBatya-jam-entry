@@ -6,12 +6,33 @@
 
 #include "errors.h"
 
+#define ETHERNET_MTU 	1500
+#define WLAN_MTU		2272
+
 #ifndef PACKET_BUFFER_MAX_SIZE
-#	define PACKET_BUFFER_MAX_SIZE 1500	// in bytes
+#	define PACKET_BUFFER_MAX_SIZE ETHERNET_MTU	// defaults to ethernet
 #endif
 
 #define GETWSAERROR(description) WSAERROR(description, WSAGetLastError())
 
+/* 		:: RELIABLE DATAGRAM SUPERSTRUCTURE ::
+
+	Требования:
+		. Избежание повторных отправлений пакетов. Клиент должен сообщать лично, что ему нужно.
+		. Передача частей крупных данных без привязки к порядку.
+	      Сервер держит всю информацию до тех пор, пока клиент её не получит или наступает timeout
+		. Возможность открытия множества туннелей одновременно, распараллеливание
+		. Принимающей и отправляющей стороной могут быть любые части сети, но решение остаётся за сервером
+
+	Структура инкапсулируемого загаловка:
+		. Tunnel session ID 	-- индификатор сессии к которой относится данный пакет
+		. Packet ID 			-- если текущий флаг TUNNEL_DATA, то Packet ID используется
+								   для указания того, к какой части потока относится полученная информация
+								   при TUNNEL_REQUEST к пакету не должна прикрепляться никакая информация,
+								   а Packet ID использовать для формирования нового пакета и отправки его
+		. Flag 					-- могут быть: TUNNEL_DATA, TUNNEL_REQUEST
+
+*/
 
 typedef struct
 {
@@ -28,8 +49,10 @@ typedef struct
 ClientSocket;
 
 typedef enum PacketType {
-	// Special packet that tells to the other side that packet was recieved (UDP safety)
-	PACKET_RECIEVED,
+	// Tunnel organisation (for Reliable Datagram Superstructure)
+	TUNNEL_REQUEST,			// Try to establish a tunnel connection
+	TUNNEL_ACCEPT,			// Say to server that client is ready to recieve packets
+	TUNNEL_PACKET,			// Packet with header designed to both data transfer and data request purposes
 
 	// Client-side
 	REQUEST_ID,
@@ -77,12 +100,12 @@ __forceinline SOCKET initUDPSocket()
 // если адрес актуален - вызывается новый recvfrom на этот раз списывающий данные пакета
 // в ином случае снова вызывается нулевой recvfrom, дабы сбросить пакет с очереди
 
-// Возможно в этом нет большой нужды, если пакеты ограничены по размерам до 1500 байт
+// > Возможно, в этом нет большой нужды, если пакеты ограничены по размерам до 1500 байт
 
 char PACKET_BUFFER[PACKET_BUFFER_MAX_SIZE];
 char* PACKET_BUFFER_PTR = PACKET_BUFFER;
 
-#define PACKET_BUFFER_SIZE (long long)PACKET_BUFFER_PTR - (long long)PACKET_BUFFER
+#define PACKET_BUFFER_SIZE (long long)PACKET_BUFFER_PTR - (long long)PACKET_BUFFER //ptrdiff_t
 
 #define addPacketData(data)				\
 		_Generic((data),				\
@@ -97,10 +120,13 @@ char* PACKET_BUFFER_PTR = PACKET_BUFFER;
 	   	 )(data)
 
 // TODO
-// #define addPacketDataArray(data_ptr)		\
-// 		_Generic((data_ptr),				\
-// 	   int16_t*: addPacketDataArrayINT8,	\
+// #define addPacketDataArray(data_ptr)
+// 		_Generic((data_ptr),
+// 	   int16_t*: addPacketDataArrayINT8,
 // 	   )(data)
+
+// TODO Должны ли мы думать о том, что может понадобиться писать два пакета одновременно?
+// 		Текущая реализация через state machine локанична, но лишена такой возможности.
 
 // Drops pointer to the beginning effectivly erasing the data
 // Each packet has to begin with packet type index

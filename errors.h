@@ -18,6 +18,8 @@ typedef enum error {
 	ITER_ACCESS_OUTOFBOUNDS_ERR,
 	TEXTURE_LOADING_ERR,
 	ZERO_SIZED_TEXTURE_ERR,
+	ITER_IS_NOT_SPECIFIED_ERR,
+	ITER_DATA_IS_NOT_SPECIFIED_ERR,
 }
 Error_T;
 
@@ -31,6 +33,8 @@ char* ERRORTEXT[] = {
 	"iterator access violation, index is out of size for a given iter\n",
 	"error occured while loading texture\n",
 	"zero sized texture. possibly something wrong with the texture or its loading\n",
+	"iterable wasn't specified in default addIter call\n",
+	"iterable data wasnt' specified in default addIter call\n",
 };
 
 typedef enum warning {
@@ -90,6 +94,16 @@ void EXIT_ERROR(Error_T error_code)
 	printf("RUNTIME ERROR:\n");
 	printf(ERRORTEXT[error_code]);
 	CONTACT_ME
+	printf(">returning with the code 0x%x\n", error_code);
+	exit(error_code);
+}
+
+void EXIT_ERROR_DESC(Error_T error_code, char* description)
+{
+	printf("RUNTIME ERROR:\n");
+	printf(ERRORTEXT[error_code]);
+	CONTACT_ME
+	printf("//%s\n", description);
 	printf(">returning with the code 0x%x\n", error_code);
 	exit(error_code);
 }

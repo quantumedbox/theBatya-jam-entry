@@ -37,6 +37,34 @@ void appClosure(void);
 
 int main(void)
 {
+	Iterable* test = newIter();
+
+	int value1 = 1;
+	int value2 = 2;
+	int value3 = 3;
+
+	int* testON_HEAP = (int*)malloc(sizeof(int));
+
+	// addIter(test, (void*)&value1, NOT_ON_HEAP);
+	// addIter(test, (void*)&value2, NOT_ON_HEAP);
+	// addIter(test, (void*)&value3, NOT_ON_HEAP);
+	// addIter(test, (void*)&testON_HEAP);
+
+	for (int i = 10000000; i--;)
+	{
+		int* testON_HEAP = (int*)malloc(sizeof(int));
+		addIter(test, (void*)testON_HEAP, ON_HEAP);
+		delIndexIter(test, 0);
+	}
+
+	// delIndexIter(test, 0);
+
+	printIter(test);
+
+	// clearIter(test);
+
+	// exit(0);
+
 	Engine gameEngine;
 	initEngine(&gameEngine, 600, 600);
 

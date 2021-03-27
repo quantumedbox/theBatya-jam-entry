@@ -28,8 +28,6 @@ void gameLoop(Engine engine)
 	glfwSetCursorPosCallback(engine.window_ptr, game_cursorPosCallback);
 	glfwSetWindowSizeCallback(engine.window_ptr, game_windowResizeCallback);
 
-	engine.mainScene = newScene();
-
 	GLint program = newRenderProgram("shaders/base_vertex.vert", "shaders/base_fragment.frag");
 	TextureObj* fire_texture = newTextureObj("assets/Fire16x.png", 16, 16);
 	TextureObj* table_texture = newTextureObj("assets/table.gif", 0, 0);

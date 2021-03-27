@@ -27,6 +27,7 @@ void initEngine(Engine* engine, uint width, uint height)
 	cam_updatePerspective(engine->camera, (float)width / height);
 
 	engine->keyLayout = keyLayout_new();
+	engine->mainScene = newScene();
 }
 
 __forceinline Scene* newScene()
@@ -56,7 +57,7 @@ SceneObj* addSceneObj(Scene* scene, SceneObjType type)
 	}
 
 	logf("adding scene_obj at %p to scene %p\n", new, scene->objs);
-	addIter(scene->objs, new);
+	addIter(scene->objs, new, ON_HEAP);
 
 	return new;
 }

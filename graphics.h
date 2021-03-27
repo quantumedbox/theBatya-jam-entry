@@ -107,6 +107,7 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 		// glm_vec3_negate_to(camera->cameraUp, lookUpVe);
 
 	// Bilboarding
+	// TODO Стоит перенести трансформации на шейдер, ибо расчёты на процессоре для большого количества объектов крайне требовательны
 	vec3 lookAt = GLM_VEC3_ZERO_INIT;
 	glm_vec3_sub(camera->cameraPos, pos, lookAt);
 	glm_lookat(GLM_VEC3_ZERO, lookAt, (vec3){0.0, -1.0, 0.0}, modelMat);
