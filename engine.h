@@ -11,11 +11,11 @@ Scene* newScene();
 GameObj* newGameObj();
 SceneObj* addSceneObj(Scene* scene, SceneObjType type);
 void renderScene(Scene* scene, Camera* camera);
-void processAnimations(Scene* scene);
 void delScene(Scene* scene);
 void delGameObj(GameObj* obj);
 void freeEngineResources(Engine* engine);
 
+void processAnimations(data_t obj);
 
 void initEngine(Engine* engine, uint width, uint height)
 {
@@ -75,9 +75,11 @@ void delScene(Scene* scene)
 	logf("deleting scene at %p\n", scene);
 
 	Iterator* iter = getIterator(scene->objs);
-	while (iter->remains)
+	while (true)
 	{
 		SceneObj* obj = next_iteration_of_type(iter, SceneObj);
+		check_stop_iteration(obj);
+
 		logf("freeing scene_obj at %p\n", obj);
 
 		switch (obj->type) {
@@ -109,16 +111,18 @@ __forceinline void freeEngineResources(Engine* engine)
 	delScene(engine->mainScene);
 }
 
-void renderScene(Scene* scene, Camera* camera)
+void renderScene(Scene* scene, Camera* camera)	// TODO Geometry context that is written as view uniform matrix in shader
 {
 	#ifdef ANIMATIONS
 	processAnimations(scene);
 	#endif
 
 	Iterator* iter = getIterator(scene->objs);
-	while (iter->remains)
+	setIteratorMapFunc(iter, processAnimations);
+	while (true)
 	{
 		SceneObj* obj = next_iteration_of_type(iter, SceneObj);
+		check_stop_iteration(obj);
 
 		switch (obj->type) {
 		case NestedSceneType:
@@ -141,21 +145,18 @@ void renderScene(Scene* scene, Camera* camera)
 	}
 }
 
-void processAnimations(Scene* scene)
+// IterMapFunc for renderScene
+void processAnimations(data_t in)
 {
-	Iterator* iter = getIterator(scene->objs);
-	while (iter->remains)
-	{
-		SceneObj* obj = next_iteration_of_type(iter, SceneObj);
+	SceneObj* obj = (SceneObj*)in;
+	switch (obj->type) {
+	case GameObjType:
+		obj->obj->renderObj->frame += (float)timeDelta / 1000 * obj->obj->renderObj->animationSpeed;
+		if (obj->obj->renderObj->frame >= obj->obj->renderObj->frameCount)
+			obj->obj->renderObj->frame = 0.0f;
+		break;
 
-		switch (obj->type) {
-		case GameObjType:
-			obj->obj->renderObj->frame += (float)timeDelta / 1000 * obj->obj->renderObj->animationSpeed;
-			if (obj->obj->renderObj->frame >= obj->obj->renderObj->frameCount)
-				obj->obj->renderObj->frame = 0.0f;
-			break;
-		default:
-			continue;
-		}
+	default:
+		return;
 	}
 }

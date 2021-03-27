@@ -15,6 +15,10 @@
 
 #define next_iteration_of_type(iter, type) (type*)nextIterator(iter)
 
+#define ITERATION_STOP	NULL
+
+#define check_stop_iteration(obj) if (obj == ITERATION_STOP) break;
+
 #define ON_HEAP 	1
 #define NOT_ON_HEAP 0
 #define DEFAULT_ADD_ITER_FLAG ON_HEAP
@@ -54,7 +58,9 @@ typedef struct
 }
 Iterable;	// i
 
-typedef data_t (*SearchFunction_T)(IterElem*);
+typedef data_t (*IterFunction_T)(IterElem*);
+
+typedef void (*IterMapFunction_T)(data_t);
 
 // Iteration is done via this
 typedef struct
@@ -63,7 +69,8 @@ typedef struct
 //  IterElem*			last;	// for comparison in function-driven iteration
 	int32_t 			remains;
 	int32_t				idx;
-	SearchFunction_T 	sfunc;	// search function for custom iteration
+	IterFunction_T 		itfunc;	// search function for custom iteration
+	IterMapFunction_T 	mapfunc;// map function, that is called for every IterElem
 }
 Iterator;	// it
 
@@ -82,8 +89,8 @@ Iterable* 	newIter			();
 // Iteration functions
 Iterator* 	getIterator		(Iterable* i);						// get iterator from iterable
   data_t 	nextIterator	(Iterator* it);						// main iteration function for both functional and linear types
-    void 	setIteratorFunc (Iterator* it, SearchFunction_T);
-    void 	stopIterator	(Iterator* it);
+    void 	setIteratorFunc (Iterator* it, IterFunction_T);
+    void* 	stopIterator	(Iterator* it);
 
 #define     _S 	static 	// Internal realisation
 _S  void 	_clearIter 		(IterElem* ie);
@@ -128,10 +135,11 @@ Iterator* getIterator(Iterable* i)
 {
 	Iterator* new = malloc_type(Iterator);
 	new->next 	 	= i->first;
-	// new->last 		= i->last;
+//	new->last 		= i->last;
 	new->remains 	= i->len;
 	new->idx 		= 0;
-	new->sfunc 		= NULL;
+	new->itfunc 	= NULL;
+	new->mapfunc 	= NULL;
 
 	return new;
 }
@@ -143,16 +151,18 @@ __forceinline data_t nextIterator(Iterator* it)
 
 	data_t return_data;
 
-	if (it->sfunc == NULL)
+	if (it->itfunc == NULL)
 	{
-		return_data = it->next->data;
-		it->next = it->next->next;
+		if (it->remains == 0)
+			return stopIterator(it);	// TODO Разрешить проблему остановки итерации. Возможно, выделить NULL как стоп-сигнал
 
+		return_data = it->next->data;
+		if (it->mapfunc != NULL)
+			it->mapfunc(return_data);
+
+		it->next = it->next->next;
 		it->remains -= 1;
 		it->idx 	+= 1;
-
-		if (it->remains == 0)
-			stopIterator(it);	// TODO Разрешить проблему остановки итерации. Возможно, выделить NULL как стоп-сигнал
 
 		return return_data;
 	}
@@ -160,12 +170,16 @@ __forceinline data_t nextIterator(Iterator* it)
 	{
 		while (it->next != NULL)
 		{
-			return_data = it->sfunc(it->next);
+			return_data = it->itfunc(it->next);
+			if (it->mapfunc != NULL)
+				it->mapfunc(return_data);
+
+			it->idx += 1;
 
 			it->next = it->next->next;
-			if(it->next == NULL)
-				stopIterator(it);
-
+			if(it->next == NULL) {
+				return stopIterator(it);
+			}
 			if (return_data != NULL)
 				return return_data;
 		}
@@ -173,9 +187,19 @@ __forceinline data_t nextIterator(Iterator* it)
 	}
 }
 
-__forceinline void stopIterator(Iterator* it)
+__forceinline void setIteratorFunc(Iterator* it, IterFunction_T func)
 {
-	free(it);
+	it->itfunc = func;
+}
+
+__forceinline void setIteratorMapFunc(Iterator* it, IterMapFunction_T func)
+{
+	it->mapfunc = func;
+}
+
+__forceinline void* stopIterator(Iterator* it)
+{
+	free(it);	return ITERATION_STOP;
 }
 
 // Returns false if operation isn't successful

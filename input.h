@@ -44,9 +44,11 @@ KeyBinding* keyLayout_processKey(KeyLayout* layout, int target_key)
 		return NULL;	// Uninitialized keyLayout, maybe it should give an error instead
 
 	Iterator* iter = getIterator(layout->keyBindings);
-	while (iter->remains)
+	while (true)
 	{
 		KeyBinding* bind = next_iteration_of_type(iter, KeyBinding);
+		check_stop_iteration(bind);
+
 		if (bind->key == target_key)
 			return bind;
 	}

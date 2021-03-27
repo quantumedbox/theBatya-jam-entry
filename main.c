@@ -35,6 +35,13 @@ GLFWwindow* initScreen(uint width, uint height);
 void initOpenGL(void);
 void appClosure(void);
 
+data_t func(IterElem* elem)
+{
+	if (*(int*)elem->data % 2 == 0)
+		return elem->data;
+	return NULL;
+}
+
 int main(void)
 {
 	Engine gameEngine;
