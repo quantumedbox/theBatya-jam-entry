@@ -7,10 +7,12 @@
 #define DEFAULT_MAX_ITER_LEN -1	// Negative == unlimited
 #endif
 
-// TODO Функциональный метод итерации, приспосабливаемый к любым типам данных
 // TODO Блокирование изменений после начала итерации
 // TODO Mulex lock
-// TODO Аллокация всех элементов стека в памяти по порядку друг за другом и итерация через pointer offset, без нужды рекурсии
+// TODO !!! Аллокация всех элементов стека в памяти по порядку друг за другом и итерация через pointer offset, без нужды рекурсии
+//			Индексация тогда станет максимально простой и независимой от размеров, next указатель может быть опущен, экономя память
+//			Единственный минус это замедленное добавление новых элементов, так как вся структура требует перестройки (но возможна реализация capacity для буффера)
+//			Но вся суть итератора - скорость итерации, она первостепенна
 
 #define malloc_type(type) (type*)malloc(sizeof(type))
 
@@ -24,16 +26,19 @@
 #define NOT_ON_HEAP 0
 #define DEFAULT_ADD_ITER_FLAG ON_HEAP
 
-/*	Usage:
+
+// ----------------------------------------------------------------- Iterator usage -- //
+/*
 
 	Iterator* it = getIterator(i);
-	while (it->remains)
+	while (true)
 	{
 		Type* obj = next_iteration_of_type(it, Type);
+		check_stop_iteration(obj);
+		...
 	}
 
 */
-
 // --------------------------------------------------------------- Type definitions -- //
 
 typedef void* data_t;
@@ -68,7 +73,7 @@ typedef struct
 {
 	IterElem* 			next;
 //  IterElem*			last;	// for comparison in function-driven iteration
-	int32_t 			remains;
+	int32_t 			remains;// TODO в данный момент это уже не нужно, ибо остановка происходит по возвращаемому значению. Следует почистить
 	int32_t				idx;
 	IterFunction_T 		itfunc;	// search function for custom iteration
 	IterMapFunction_T 	mapfunc;// map function, that is called for every IterElem. if itfunc is present, mapfunc works only if itfunc check passed
@@ -147,7 +152,7 @@ Iterator* getIterator(Iterable* i)
 	return new;
 }
 
-__forceinline data_t nextIterator(Iterator* it)
+__forceinline data_t nextIterator(Iterator* it)	// Важно обеспечить максимальную производительность данной функции
 {
 	if (it->next == NULL)
 		return stopIterator(it);

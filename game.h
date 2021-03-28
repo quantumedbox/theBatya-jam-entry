@@ -15,6 +15,8 @@ void game_initFreecamLayount(KeyLayout* layout);
 Engine* gameEngine;
 
 
+// TODO Нужно думать, каким именно образом разделять клиент и сервер
+
 void gameLoop(Engine engine)
 {
 	glfwSetInputMode(engine.window_ptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -30,14 +32,14 @@ void gameLoop(Engine engine)
 
 	GLint program = newRenderProgram("shaders/base_vertex.vert", "shaders/base_fragment.frag");
 	TextureObj* fire_texture = newTextureObj("assets/Fire16x.png", 16, 16);
-	TextureObj* table_texture = newTextureObj("assets/table.gif", 0, 0);
+	// TextureObj* table_texture = newTextureObj("assets/table.gif", 0, 0);
 
 	SceneObj* scene = addSceneObj(engine.mainScene, NestedSceneType);
-	SceneObj* table = addSceneObj(engine.mainScene, GameObjType);
-	obj_setRenderProgram(table, program);
-	obj_setGeometry(table, &Sprite);
-	obj_setTextureObj(table, table_texture);
-	obj_setScalePlaneRelative(table, 10.f);
+	// SceneObj* table = addSceneObj(engine.mainScene, GameObjType);
+	// obj_setRenderProgram(table, program);
+	// obj_setGeometry(table, &Sprite);
+	// obj_setTextureObj(table, table_texture);
+	// obj_setScalePlaneRelative(table, 10.f);
 
 	for (int i = 25; i--;)
 	{
@@ -81,6 +83,8 @@ void gameLoop(Engine engine)
 	freeEngineResources(&engine);
 }
 
+#define CLOSE_WINDOW 0xF0
+
 void game_keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	KeyBinding* bind = keyLayout_processKey(gameEngine->keyLayout, key);
@@ -91,6 +95,9 @@ void game_keyCallback(GLFWwindow* window, int key, int scancode, int action, int
 	case MOVEMENT_KEY:
 		if (action == GLFW_PRESS) cam_setInputState(bind->action, true);
 		if (action == GLFW_RELEASE) cam_setInputState(bind->action, false);
+		break;
+	case CONTROL_KEY:
+		if (bind->action == CLOSE_WINDOW) glfwSetWindowShouldClose(window, true);
 		break;
 	case UNKNOWN_KEY:
 		WARNING(UNKNOWN_KEY_WARN);
@@ -121,4 +128,6 @@ void game_initFreecamLayount(KeyLayout* layout)
 	keyLayout_bindNewKey(layout, GLFW_KEY_S, MOVE_BACKWARD, MOVEMENT_KEY);
 	keyLayout_bindNewKey(layout, GLFW_KEY_A, MOVE_LEFT, MOVEMENT_KEY);
 	keyLayout_bindNewKey(layout, GLFW_KEY_D, MOVE_RIGHT, MOVEMENT_KEY);
+
+	keyLayout_bindNewKey(layout, GLFW_KEY_ESCAPE, CLOSE_WINDOW, CONTROL_KEY);
 }

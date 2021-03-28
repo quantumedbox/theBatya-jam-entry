@@ -27,6 +27,9 @@ const char* afterText = "Thanks for playing!\n"\
 #include "errors.h"
 #include "typedef.h"
 
+#include "submodules/networking/networking.h"
+#include "submodules/networking/client.h"
+
 #define ANIMATIONS
 
 #include "game.h"
@@ -44,10 +47,17 @@ data_t func(IterElem* elem)
 
 int main(void)
 {
+	initWSA();
+	ClientAPI* api = newClientAPI();
+	if (!connectToServer(api, "127.0.0.1", DEFAULT_PORT))
+	{
+		exit('!');
+	}
+
 	Engine gameEngine;
 	initEngine(&gameEngine, 600, 600);
 
-	// Defaults:
+	// Defaults:	// why is it here tho?
 	gameEngine.graphicsPref.clearColor[0] = 0.0f;
 	gameEngine.graphicsPref.clearColor[1] = 0.0f;
 	gameEngine.graphicsPref.clearColor[2] = 0.0f;

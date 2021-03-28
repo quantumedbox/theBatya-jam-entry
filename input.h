@@ -7,6 +7,7 @@
 enum KEY_TYPES {
 	UNKNOWN_KEY,
 	MOVEMENT_KEY,
+	CONTROL_KEY,
 };
 
 typedef struct {

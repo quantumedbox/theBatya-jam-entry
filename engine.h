@@ -4,7 +4,6 @@
 #include "iter.h"
 #include "input.h"
 #include "camera.h"
-#include "submodules/networking/networking.h"
 
 void initEngine(Engine* engine, uint width, uint height);
 Scene* newScene();

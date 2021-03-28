@@ -1,26 +1,32 @@
+#pragma once
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
 
 #include <winsock2.h>
+#include <ws2tcpip.h>
 
 #include "errors.h"
 
 #define ETHERNET_MTU 	1500
 #define WLAN_MTU		2272
 
+#define DEFAULT_PORT 	49123	// for local machine hosting
+
 #ifndef PACKET_BUFFER_MAX_SIZE
 #	define PACKET_BUFFER_MAX_SIZE ETHERNET_MTU	// defaults to ethernet
 #endif
 
-#define GETWSAERROR(description) WSAERROR(description, WSAGetLastError())
+#define LASTWSAERROR(description) 		WSAERROR(description, WSAGetLastError())
+#define PRINTLASTWSAERROR(description)	printf("WSAError: %d\n%s\n", WSAGetLastError(), description)
 
 /* 		:: RELIABLE DATAGRAM SUPERSTRUCTURE ::
 
 	Требования:
 		. Избежание повторных отправлений пакетов. Клиент должен сообщать лично, что ему нужно.
-		. Передача частей крупных данных без привязки к порядку.
-	      Сервер держит всю информацию до тех пор, пока клиент её не получит или наступает timeout
+		. Передача частей крупных данных без привязки к порядку получения.
+	      Сервер держит всю информацию до тех пор, пока клиент её не получит или наступит timeout
 		. Возможность открытия множества туннелей одновременно, распараллеливание
 		. Принимающей и отправляющей стороной могут быть любые части сети, но решение остаётся за сервером
 
@@ -49,7 +55,7 @@ typedef struct
 ClientSocket;
 
 typedef enum PacketType {
-	// Tunnel organisation (for Reliable Datagram Superstructure)
+	// Tunnel organisation (implementation of Reliable Datagram Superstructure)
 	TUNNEL_REQUEST,			// Try to establish a tunnel connection
 	TUNNEL_ACCEPT,			// Say to server that client is ready to recieve packets
 	TUNNEL_PACKET,			// Packet with header designed to both data transfer and data request purposes
@@ -79,19 +85,28 @@ __forceinline void addPacketDataUINT32(uint32_t data);
 __forceinline void addPacketDataINT64(int64_t data);
 __forceinline void addPacketDataUINT64(uint64_t data);
 
+void initWSA()
+{
+	WORD winsock_version = 0x202;
+	WSADATA winsock_data;
+	if (WSAStartup(winsock_version, &winsock_data)) {
+		LASTWSAERROR("WSA initialization error");
+	}
+}
 
-SOCKET initSocket(int address_family, int type, int protocol)
+SOCKET newSocket(int address_family, int type, int protocol)
 {
 	SOCKET sock = socket(address_family, type, protocol);
 	if (sock == INVALID_SOCKET)
-		GETWSAERROR("Error on socket creation\n");
+		LASTWSAERROR("Error on socket creation\n");
 
 	return sock;
 }
 
-__forceinline SOCKET initUDPSocket()
+// Defaults to UPD IPv4
+__forceinline SOCKET newUDPSocket()
 {
-	return initSocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	return newSocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 }
 
 // ПРИНЦИП:

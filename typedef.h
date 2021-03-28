@@ -4,11 +4,14 @@
 #include "iter.h"
 #include "input.h"
 
+typedef uint64_t UID;
+
 typedef unsigned int uint;
 
 typedef uint uvec2[2];
 typedef uint uvec3[3];
 
+// TODO V Relocate typedefs below to a different file V
 
 typedef enum Layouts {
 	// 3 vertex positions,

@@ -20,6 +20,7 @@ typedef enum error {
 	ZERO_SIZED_TEXTURE_ERR,
 	ITER_IS_NOT_SPECIFIED_ERR,
 	ITER_DATA_IS_NOT_SPECIFIED_ERR,
+	WSA_STARTUP_ERR,
 }
 Error_T;
 
@@ -35,6 +36,7 @@ char* ERRORTEXT[] = {
 	"zero sized texture. possibly something wrong with the texture or its loading\n",
 	"iterable wasn't specified in default addIter call\n",
 	"iterable data wasnt' specified in default addIter call\n",
+	"cannot start the WSA service\n",
 };
 
 typedef enum warning {
@@ -42,6 +44,8 @@ typedef enum warning {
 	UNKNOWN_SCENEOBJ_TYPE,
 	UNKNOWN_KEY_WARN,
 	SETTING_OBJ_OF_INCOMPATIBLE_TYPE_WARN,
+	SERVER_ADDRESS_ISNT_VALID_WARN,
+	SOCKET_OPTION_ISNT_VALID_WARN
 }
 Warning_T;
 
@@ -50,6 +54,8 @@ char* WARNINGTEXT[] = {
 	"encountered unknown type object in the scene and it was ignored\n",
 	"unknown key type\n",
 	"setting the value for incompatible obj type\n",
+	"given server address is not valid\n",
+	"cannot create client socket with given options\n",
 };
 
 void WARNING(Warning_T warn_code)
