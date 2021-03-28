@@ -49,7 +49,7 @@ int main(void)
 {
 	initWSA();
 	ClientAPI* api = newClientAPI();
-	if (!connectToServer(api, "127.0.0.1", DEFAULT_PORT))
+	if (!connectToServer(api, LOCALHOST, DEFAULT_PORT))
 	{
 		exit('!');
 	}

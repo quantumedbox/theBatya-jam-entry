@@ -6,6 +6,8 @@
 
 #define DEFAULT_MAX_CONNECTIONS 16
 
+#define PACKET_LIMIT_PER_CONNECTION	16	// maximum amount of packets that could be processed from a single address in a single queue walk
+
 #define REG_REGISTRED	1
 #define REG_BANNED		2
 #define REG_CONNECTED	4

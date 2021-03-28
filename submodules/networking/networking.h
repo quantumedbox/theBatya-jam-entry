@@ -12,6 +12,7 @@
 #define ETHERNET_MTU 	1500
 #define WLAN_MTU		2272
 
+#define LOCALHOST		"127.0.0.1"
 #define DEFAULT_PORT 	49123	// for local machine hosting
 
 #ifndef PACKET_BUFFER_MAX_SIZE
