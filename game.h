@@ -42,7 +42,7 @@ void gameLoop(Engine engine)
 	for (int i = 25; i--;)
 	{
 		SceneObj* obj = addSceneObj(scene->scene, GameObjType);
-		// TODO State machine for single declaration of obj properties for the new
+		// TODO State machine for single declaration of obj properties for the all new
 		obj_setRenderProgram(obj, program);
 		obj_setGeometry(obj, &Sprite);
 		obj_setPosition(obj, (vec3){rand()%25, 0, rand()%25});

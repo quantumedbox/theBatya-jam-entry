@@ -10,6 +10,7 @@
 // TODO Функциональный метод итерации, приспосабливаемый к любым типам данных
 // TODO Блокирование изменений после начала итерации
 // TODO Mulex lock
+// TODO Аллокация всех элементов стека в памяти по порядку друг за другом и итерация через pointer offset, без нужды рекурсии
 
 #define malloc_type(type) (type*)malloc(sizeof(type))
 
@@ -58,9 +59,9 @@ typedef struct
 }
 Iterable;	// i
 
-typedef data_t (*IterFunction_T)(IterElem*);
+typedef data_t (*IterFunction_T)(IterElem* in);
 
-typedef void (*IterMapFunction_T)(data_t);
+typedef void (*IterMapFunction_T)(data_t in);
 
 // Iteration is done via this
 typedef struct
@@ -70,31 +71,33 @@ typedef struct
 	int32_t 			remains;
 	int32_t				idx;
 	IterFunction_T 		itfunc;	// search function for custom iteration
-	IterMapFunction_T 	mapfunc;// map function, that is called for every IterElem
+	IterMapFunction_T 	mapfunc;// map function, that is called for every IterElem. if itfunc is present, mapfunc works only if itfunc check passed
 }
 Iterator;	// it
 
 // ------------------------------------------------------------ Function signatures -- //
 
-Iterable*	newIterLimited	(int32_t limit);
-Iterable* 	newIter			();
-   _Bool 	addIter			(Iterable* i,	data_t data, _Bool flag );
-  data_t 	popIter			(Iterable* i);						// stack-like pop from the top
-  data_t 	pullIter		(Iterable* i);						// stack-like pop from the beginning
-  data_t 	indexIter 		(Iterable* i,  int32_t idx  );		// list-like indexed retrieval
-	void 	delIndexIter	(Iterable* i,  int32_t idx  );
-	void 	clearIter 		(Iterable* i);
-	void 	printIter 		(Iterable* i);
+Iterable*	newIterLimited		(int32_t limit);
+Iterable* 	newIter				();
+   _Bool 	addIter				(Iterable* i,	data_t data, _Bool flag );
+  data_t 	popIter				(Iterable* i);						// stack-like pop from the top
+  data_t 	pullIter			(Iterable* i);						// stack-like pop from the beginning
+  data_t 	indexIter 			(Iterable* i,  int32_t idx  );		// list-like indexed retrieval
+	void 	delIndexIter		(Iterable* i,  int32_t idx  );
+	void 	clearIter 			(Iterable* i);
+	void 	printIter 			(Iterable* i);
 
 // Iteration functions
-Iterator* 	getIterator		(Iterable* i);						// get iterator from iterable
-  data_t 	nextIterator	(Iterator* it);						// main iteration function for both functional and linear types
-    void 	setIteratorFunc (Iterator* it, IterFunction_T);
-    void* 	stopIterator	(Iterator* it);
+Iterator* 	getIterator			(Iterable* i);						// get iterator from iterable
+  data_t 	nextIterator		(Iterator* it);						// main iteration function for both functional and linear types
+    void 	setIteratorFunc 	(Iterator* it, IterFunction_T f);
+	void 	setIteratorMapFunc	(Iterator* it, IterMapFunction_T f);
+
+    void* 	stopIterator		(Iterator* it);
 
 #define     _S 	static 	// Internal realisation
-_S  void 	_clearIter 		(IterElem* ie);
-_S  void 	_printIter 		(IterElem* i, int32_t idx);
+_S  void 	_clearIter 			(IterElem* ie);
+_S  void 	_printIter 			(IterElem* i, 	int32_t idx);
 _S IterElem*_indexIterElem 		(Iterable* i,  uint32_t idx);
 _S IterElem*_indexElemRecursive	(IterElem* ie, uint32_t cur, uint32_t idx);
 #undef _S
@@ -147,14 +150,14 @@ Iterator* getIterator(Iterable* i)
 __forceinline data_t nextIterator(Iterator* it)
 {
 	if (it->next == NULL)
-		return NULL;	// Iterator exit, no more elems left
+		return stopIterator(it);
 
 	data_t return_data;
 
 	if (it->itfunc == NULL)
 	{
 		if (it->remains == 0)
-			return stopIterator(it);	// TODO Разрешить проблему остановки итерации. Возможно, выделить NULL как стоп-сигнал
+			return stopIterator(it);
 
 		return_data = it->next->data;
 		if (it->mapfunc != NULL)
@@ -183,7 +186,7 @@ __forceinline data_t nextIterator(Iterator* it)
 			if (return_data != NULL)
 				return return_data;
 		}
-		return NULL;
+		return stopIterator(it);
 	}
 }
 
@@ -226,8 +229,8 @@ __forceinline void delFirstElem(Iterable* i, _Bool erase)
 {
 	if (erase && i->first->flag == ON_HEAP)
 		free(i->first->data);
+
 	IterElem* to_del = i->first;
-	i->len -= 1;
 
 	i->first = i->first->next;
 
@@ -235,6 +238,7 @@ __forceinline void delFirstElem(Iterable* i, _Bool erase)
 	else if (i->len <= 2)	i->penult = NULL;
 
 	free(to_del);
+	i->len -= 1;
 }
 
 __forceinline void delLastElem(Iterable* i, _Bool erase)
@@ -300,16 +304,25 @@ __forceinline int32_t negateIndex(Iterable* i, int32_t idx)
 void delIndexIter(Iterable* i, int32_t idx)
 {
 	idx = negateIndex(i, idx);
-	if (idx == 0) delFirstElem(i, true);
+	if 		(idx == 0) 		   delFirstElem(i, true);
 	else if (idx == i->len - 1) delLastElem(i, true);
 	else
 	{
-		IterElem* elem = _indexIterElem(i, idx - 2);
+		IterElem* elem = _indexIterElem(i, idx - 1);
 		IterElem* gap = elem->next->next;
+
+		if (elem->next == i->penult)
+		{
+			if (i->len == 3)
+				i->penult = NULL;
+			else
+				i->penult = elem;
+		}
 
 		if (elem->next->flag == ON_HEAP)
 			free(elem->next->data);
 		free(elem->next);
+		i->len -= 1;
 
 		elem->next = gap;
 	}
