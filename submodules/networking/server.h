@@ -6,8 +6,6 @@
 
 #define DEFAULT_MAX_CONNECTIONS 16
 
-#define PACKET_LIMIT_PER_CONNECTION	16	// maximum amount of packets that could be processed from a single address in a single queue walk
-
 #define REG_REGISTRED	1
 #define REG_BANNED		2
 #define REG_CONNECTED	4
@@ -15,15 +13,18 @@
 typedef struct
 {
 	UID				id;
-	SOCKADDR_IN		addr;
+	uint32_t		ip_addr;		// do not care about port as they are constantly changing
 	uint8_t			flags;
 }
 RegistryEntry;
 
 typedef struct
 {
-	SOCKET 			sock;			// initialized UDP IPv4 socket which is bind to port
-	SOCKADDR_IN 	addr;			// server address
+	SOCKET 			listening_sock;	// initialized UDP IPv4 socket which is binded to port
+	SOCKADDR_IN 	listening_addr;	// server listeting address port
+
+	SOCKET 			answering_sock;	// initialized UDP IPv4 socket which is binded to port
+	SOCKADDR_IN 	answering_addr;	// server answering address port
 
 	uint16_t		connections;	// current num of connections
 	uint16_t 		max_connections;
@@ -37,27 +38,75 @@ ServerAPI* newServerAPI()
 {
 	ServerAPI* new = (ServerAPI*)calloc(1, sizeof(ServerAPI));
 	new->max_connections = DEFAULT_MAX_CONNECTIONS;
-	new->sock 		= newUDPSocket();
-	new->tunnel 	= newIter();
-	new->registry 	= newIter();
+	new->listening_sock	 = newUDPSocket();
+	new->answering_sock	 = newUDPSocket();
+	new->tunnels 		 = newIter();
+	new->registry 		 = newIter();
 
 	return new;
 }
 
-_Bool initServerAtPort(ServerAPI* server, uint16_t port)
+SOCKADDR_IN bindSocketToPort(SOCKET sock, uint32_t ip, uint16_t port)
 {
-	SOCKADDR_IN local_addr;
-	local_addr.sin_family = AF_INET;
-	local_addr.sin_port = htons(port);
-	local_addr.sin_addr.s_addr = INADDR_ANY;
+	SOCKADDR_IN addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(port);
+	addr.sin_addr.s_addr = ip;
 
-	if(bind(server->sock, (SOCKADDR*)&local_addr, sizeof(local_addr)) == SOCKET_ERROR)
+	if(bind(sock, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR)
 	{
-		PRINTLASTWSAERROR("Error on server initialization");
-		return false;
+		EXITLASTWSAERROR("Error on initialization of socket");
 	}
 
-	server->addr = local_addr;
+	return addr;
+}
+
+_Bool initServer(ServerAPI* server, uint32_t ip, uint16_t listening_port, uint16_t answering_port)
+{
+	server->listening_addr = bindSocketToPort(server->listening_sock, ip, listening_port);
+	server->answering_addr = bindSocketToPort(server->answering_sock, ip, answering_port);
+
+	// char buffer[PACKET_MAX_SIZE] = {'\0'};
+	// SOCKADDR_IN addr_from;
+	// int addr_from_size = sizeof(addr_from);
+	// int bytes_received = recvfrom(
+	// 	server->listening_sock, buffer,
+	// 	PACKET_MAX_SIZE, 0,
+	// 	(SOCKADDR*)&addr_from, &addr_from_size
+	// );
+
+	// if(sendto(server->answering_sock, buffer, bytes_received, NO_FLAGS, (SOCKADDR*)&addr_from, sizeof(addr_from)) == SOCKET_ERROR)
+	// {
+	// 	PRINTLASTWSAERROR("cannot send answer");
+	// }
+
+	// printf("%s\n", buffer);
 
 	return true;
+}
+
+void printServerInfo(ServerAPI* server)
+{
+	printf(":SERVER INFO:\n");
+
+	printf("\tconnected: %d/%d\n", server->connections, server->max_connections);
+	printf("\tregistry entries: %d\n", server->registry->len);
+	printf("\topened tunnels: %d\n", server->tunnels->len);
+
+	printf(
+		"\tlisteting addr: %d.%d.%d.%d:%d\n",
+		server->listening_addr.sin_addr.S_un.S_un_b.s_b1,
+		server->listening_addr.sin_addr.S_un.S_un_b.s_b2,
+		server->listening_addr.sin_addr.S_un.S_un_b.s_b3,
+		server->listening_addr.sin_addr.S_un.S_un_b.s_b4,
+		htons(server->listening_addr.sin_port)
+	);
+	printf(
+		"\tanswering addr: %d.%d.%d.%d:%d\n",
+		server->answering_addr.sin_addr.S_un.S_un_b.s_b1,
+		server->answering_addr.sin_addr.S_un.S_un_b.s_b2,
+		server->answering_addr.sin_addr.S_un.S_un_b.s_b3,
+		server->answering_addr.sin_addr.S_un.S_un_b.s_b4,
+		htons(server->answering_addr.sin_port)
+	);
 }

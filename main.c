@@ -6,6 +6,8 @@
 #include "freetype.h"
 #include <cglm/cglm.h>
 
+#define CLIENT_BUILD	// TODO it all should be in a Makefile
+
 // #define RELEASE
 #define DEBUG
 // #define LOG_IN_FILE	// TODO define it to save all the log in the file rather than print on console
@@ -29,34 +31,46 @@ const char* afterText = "Thanks for playing!\n"\
 
 #include "submodules/networking/networking.h"
 #include "submodules/networking/client.h"
+#include "submodules/networking/server.h"
 
-#define ANIMATIONS
+#ifdef CLIENT_BUILD	// Server build should not include all the graphical fluff
+#	define IMPLEMENT_GRAPHICS
+#	define IMPLEMENT_ANIMATIONS
+#endif
 
 #include "game.h"
 
 GLFWwindow* initScreen(uint width, uint height);
-void initOpenGL(void);
-void appClosure(void);
+void 		initOpenGL(void);
+void 		appClosure(void);
 
-data_t func(IterElem* elem)
+int main(int argc, char** argv)
 {
-	if (*(int*)elem->data % 2 == 0)
-		return elem->data;
-	return NULL;
-}
+	ServerAPI* server;
+	ClientAPI* client;
 
-int main(void)
-{
-	initWSA();
-	ClientAPI* api = newClientAPI();
-	if (!connectToServer(api, LOCALHOST, DEFAULT_PORT))
+	if (argc >= 2 && !strcmp(argv[1], "host"))
 	{
-		exit('!');
+		initWSA();
+		server = newServerAPI();
+		initServer(server, LOCALHOST, DEFAULT_LISTENING_PORT, DEFAULT_ANSWERING_PORT);
+
+		printServerInfo(server);
+	}
+	else if (argc >= 2 && !strcmp(argv[1], "client"))
+	{
+		initWSA();
+		client = newClientAPI();
+		if (!clientConnect(client, LOCALHOST, DEFAULT_LISTENING_PORT))
+		{
+			exit('!');
+		}
 	}
 
 	Engine gameEngine;
 	initEngine(&gameEngine, 600, 600);
 
+	#ifdef IMPLEMENT_GRAPHICS	// TODO graphic-less build
 	// Defaults:	// why is it here tho?
 	gameEngine.graphicsPref.clearColor[0] = 0.0f;
 	gameEngine.graphicsPref.clearColor[1] = 0.0f;
@@ -67,6 +81,7 @@ int main(void)
 	);
 
 	initOpenGL();
+	#endif
 
 	gameLoop(gameEngine);
 

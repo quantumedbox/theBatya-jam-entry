@@ -112,12 +112,12 @@ __forceinline void freeEngineResources(Engine* engine)
 
 void renderScene(Scene* scene, Camera* camera)	// TODO Geometry context that is written as view uniform matrix in shader
 {
-	#ifdef ANIMATIONS
-	processAnimations(scene);
+	Iterator* iter = getIterator(scene->objs);
+
+	#ifdef IMPLEMENT_ANIMATIONS
+	setIteratorMapFunc(iter, processAnimations);
 	#endif
 
-	Iterator* iter = getIterator(scene->objs);
-	setIteratorMapFunc(iter, processAnimations);
 	while (true)
 	{
 		SceneObj* obj = next_iteration_of_type(iter, SceneObj);

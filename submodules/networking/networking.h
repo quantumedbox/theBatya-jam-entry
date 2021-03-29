@@ -7,20 +7,31 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-#include "errors.h"
+#include "../../errors.h"
 
 #define ETHERNET_MTU 	1500
 #define WLAN_MTU		2272
 
-#define LOCALHOST		"127.0.0.1"
-#define DEFAULT_PORT 	49123	// for local machine hosting
+#define LOCALHOST		inet_addr("127.0.0.1")
+#define NO_FLAGS 		0
 
-#ifndef PACKET_BUFFER_MAX_SIZE
-#	define PACKET_BUFFER_MAX_SIZE ETHERNET_MTU	// defaults to ethernet
+#define DEFAULT_LISTENING_PORT 	49123	// for local machine hosting
+#define DEFAULT_ANSWERING_PORT 	49124	// for local machine hosting
+
+#ifndef PACKET_MAX_SIZE
+#	define PACKET_MAX_SIZE ETHERNET_MTU	// defaults to ethernet
 #endif
 
-#define LASTWSAERROR(description) 		WSAERROR(description, WSAGetLastError())
+#define EXITLASTWSAERROR(description) 		WSAERROR(description, WSAGetLastError())
 #define PRINTLASTWSAERROR(description)	printf("WSAError: %d\n%s\n", WSAGetLastError(), description)
+
+// TODO Проверки на превышение длины допустимого размера пакета при формировании пакета
+
+/* Пакеты вне RDS должны содержать следующие флаги: (Или может эти поведения должны быть привязаны к самим типам?)
+		. ANY 			-- пакет подлежит рассмотрению вне зависимости когда он прибыл и является ли он дубликатом
+		. LATEST		-- только самый последний пакет данного типа имеет значение, остальные отбрасываются
+		. NO_DOUBLE 	-- не важно время прибытия, но дубликаты должны быть отброшены
+*/
 
 /* 		:: RELIABLE DATAGRAM SUPERSTRUCTURE ::
 
@@ -62,12 +73,12 @@ typedef enum PacketType {
 	TUNNEL_PACKET,			// Packet with header designed to both data transfer and data request purposes
 
 	// Client-side
-	REQUEST_ID,
+	REQUEST_REGISTRY,
 	REQUEST_GAMESTATE,
 	CLIENT_DISCONECT,
 
 	// Server-side
-	SEND_ID,
+	REGISTRY_ACCEPTED,		// Packet that holds ID that is given to the new connection
 	SEND_GAMESTATE,
 	SERVER_CLOSED_CONNECTION,
 }
@@ -91,7 +102,7 @@ void initWSA()
 	WORD winsock_version = 0x202;
 	WSADATA winsock_data;
 	if (WSAStartup(winsock_version, &winsock_data)) {
-		LASTWSAERROR("WSA initialization error");
+		EXITLASTWSAERROR("WSA initialization error");
 	}
 }
 
@@ -99,7 +110,7 @@ SOCKET newSocket(int address_family, int type, int protocol)
 {
 	SOCKET sock = socket(address_family, type, protocol);
 	if (sock == INVALID_SOCKET)
-		LASTWSAERROR("Error on socket creation\n");
+		EXITLASTWSAERROR("Error on socket creation\n");
 
 	return sock;
 }
@@ -118,7 +129,7 @@ __forceinline SOCKET newUDPSocket()
 
 // > Возможно, в этом нет большой нужды, если пакеты ограничены по размерам до 1500 байт
 
-char PACKET_BUFFER[PACKET_BUFFER_MAX_SIZE];
+char PACKET_BUFFER[PACKET_MAX_SIZE];
 char* PACKET_BUFFER_PTR = PACKET_BUFFER;
 
 #define PACKET_BUFFER_SIZE (long long)PACKET_BUFFER_PTR - (long long)PACKET_BUFFER //ptrdiff_t
@@ -133,6 +144,10 @@ char* PACKET_BUFFER_PTR = PACKET_BUFFER;
 	   uint32_t: addPacketDataUINT32,	\
 	    int64_t: addPacketDataINT64,	\
 	   uint64_t: addPacketDataUINT64,	\
+	      float: addPacketDataFloat,	\
+	     double: addPacketDataDouble,	\
+		   char: addPacketDataUINT8,	\
+		  char*: addPacketDataStr		\
 	   	 )(data)
 
 // TODO
@@ -217,4 +232,40 @@ __forceinline void addPacketDataUINT64(uint64_t data)
 	*(PACKET_BUFFER_PTR++) = (data & 0x00000000FF0000) >> 16;
 	*(PACKET_BUFFER_PTR++) = (data & 0x0000000000FF00) >>  8;
 	*(PACKET_BUFFER_PTR++) =  data & 0x000000000000FF;
+}
+
+// May be quite dangerous, maybe we should always set manually, how many bytes to copy
+__forceinline void addPacketDataStr(char* data)
+{
+	strcpy(PACKET_BUFFER_PTR, data);
+	PACKET_BUFFER_PTR += strlen(data);
+	*(PACKET_BUFFER_PTR++) = '\0';
+}
+
+__forceinline void addPacketDataFloat(float data)
+{
+	char const* bytes = (char const*)&data;
+	for (size_t i = 0; i < sizeof(float); i++) {
+		*(PACKET_BUFFER_PTR++) = bytes[i];
+	}
+}
+
+__forceinline void addPacketDataDouble(double data)
+{
+	char const* bytes = (char const*)&data;
+	for (size_t i = 0; i < sizeof(double); i++) {
+		*(PACKET_BUFFER_PTR++) = bytes[i];
+	}
+}
+
+void printPacket()
+{
+	for (int i = 0; i < PACKET_BUFFER_SIZE; i++)
+	{
+		if (PACKET_BUFFER[i] >= 32)
+			printf("%c ", PACKET_BUFFER[i]);
+		else
+			printf("%x ", PACKET_BUFFER[i]);
+	}
+	printf("\n");
 }
