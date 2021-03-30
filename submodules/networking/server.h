@@ -34,6 +34,15 @@ typedef struct
 }
 ServerAPI;
 
+ServerAPI* 	newServerAPI();
+	_Bool 	initServer(ServerAPI*, uint32_t ip, uint16_t listening_port, uint16_t answering_port);
+	 void 	printServerInfo(ServerAPI*);
+
+SOCKADDR_IN bindSocketToPort(SOCKET, uint32_t ip, uint16_t port);
+
+	 void 	serverSendPacketToAddr(ServerAPI*, SOCKADDR_IN addr);
+
+
 ServerAPI* newServerAPI()
 {
 	ServerAPI* new = (ServerAPI*)calloc(1, sizeof(ServerAPI));
@@ -66,23 +75,32 @@ _Bool initServer(ServerAPI* server, uint32_t ip, uint16_t listening_port, uint16
 	server->listening_addr = bindSocketToPort(server->listening_sock, ip, listening_port);
 	server->answering_addr = bindSocketToPort(server->answering_sock, ip, answering_port);
 
-	// char buffer[PACKET_MAX_SIZE] = {'\0'};
-	// SOCKADDR_IN addr_from;
-	// int addr_from_size = sizeof(addr_from);
-	// int bytes_received = recvfrom(
-	// 	server->listening_sock, buffer,
-	// 	PACKET_MAX_SIZE, 0,
-	// 	(SOCKADDR*)&addr_from, &addr_from_size
-	// );
+	char buffer[PACKET_MAX_SIZE] = {'\0'};
+	SOCKADDR_IN addr_from;
+	int addr_from_size = sizeof(addr_from);
+	recvfrom(
+		server->listening_sock, buffer,
+		PACKET_MAX_SIZE, 0,
+		(SOCKADDR*)&addr_from, &addr_from_size
+	);
 
-	// if(sendto(server->answering_sock, buffer, bytes_received, NO_FLAGS, (SOCKADDR*)&addr_from, sizeof(addr_from)) == SOCKET_ERROR)
-	// {
-	// 	PRINTLASTWSAERROR("cannot send answer");
-	// }
-
-	// printf("%s\n", buffer);
+	newPacket(REGISTRY_ACCEPTED);
+	addPacketData((UID)2525252);
+	serverSendPacketToAddr(server, addr_from);
 
 	return true;
+}
+
+void serverSendPacketToAddr(ServerAPI* server, SOCKADDR_IN addr)
+{
+	if (sendto(server->answering_sock, PACKET_BUFFER, PACKET_BUFFER_SIZE, NO_FLAGS, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR)
+		{
+			#ifdef STRICT_RUNTIME
+			EXITLASTWSAERROR("sendto function failed");
+			#else
+			PRINTLASTWSAERROR("sendto function failed");
+			#endif
+		}
 }
 
 void printServerInfo(ServerAPI* server)

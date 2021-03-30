@@ -46,16 +46,18 @@ _Bool clientConnect(ClientAPI* client, uint32_t address, uint16_t port)//, uint3
 	client->addr = server_addr;
 
 	newPacket(REQUEST_REGISTRY);
-	addPacketData((char*)"DING DONG, WICKED BITCH IS HERE!");
-
-	clientSendPacket(client);
+	addPacketData((char*)"DING DONG, WICKED BITCH IS DEAD!");
 
 	for (int i = MAX_REGISTRATION_REQUESTS; i--;) {
+		clientSendPacket(client);
+
 		if(clientWaitForPacket(client, REGISTRY_ACCEPTED, 1000))
 		{
-
+			printf("registred with an ID of %llu\n", client->id);
 			return true;
 		}
+		else
+			printf("server isn't responding, next try...\n");
 	}
 
 	return false;
@@ -75,11 +77,24 @@ void clientSendPacket(ClientAPI* client)
 
 // wait for a particular, discarding everything else
 // returns true when packet is recieved
-_Bool clientWaitForPacket(ClientAPI* client, PacketType_T packet, uint32_t ms)
+_Bool clientWaitForPacket(ClientAPI* client, PacketType_T target, uint32_t ms_timer)
 {
+	_Bool return_value = false;
+	DWORD delay = ms_timer;
+
+	socketSetRecvTimeout(client->sock, delay);
+
+	// Should we check to which address incoming packet is belonging? it might be not a server
 	char buffer[PACKET_MAX_SIZE] = {'\0'};
-	int bytes_received = recv(
-		client->sock, buffer,
-		PACKET_MAX_SIZE, NO_FLAGS
-	);
+	socketPeek(client->sock, buffer);
+	if (buffer[0] == target) {
+		client->id = *(UID*)&buffer[1];
+		return_value = true;
+	}
+	socketPopInputQueue(client->sock);
+
+	// don't forget to set delay to 0
+	socketSetRecvTimeout(client->sock, NO_DELAY);
+
+	return return_value;
 }
