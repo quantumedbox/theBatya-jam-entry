@@ -22,7 +22,7 @@
 #	define PACKET_MAX_SIZE ETHERNET_MTU	// defaults to ethernet
 #endif
 
-#define EXITLASTWSAERROR(description) 		WSAERROR(description, WSAGetLastError())
+#define EXITLASTWSAERROR(description) 	WSAERROR(description, WSAGetLastError())
 #define PRINTLASTWSAERROR(description)	printf("WSAError: %d\n%s\n", WSAGetLastError(), description)
 
 // TODO Проверки на превышение длины допустимого размера пакета при формировании пакета
@@ -151,10 +151,58 @@ __forceinline void socketPopInputQueue(SOCKET sock)
 	recv(sock, ZERO_BUFFER, 0, NO_FLAGS);
 }
 
-const DWORD NO_DELAY = 0;
-__forceinline void socketSetRecvTimeout(SOCKET sock, DWORD ms)
+__forceinline void socketSetRecvTimeout(SOCKET sock, uint32_t ms)
 {
-	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&ms, sizeof(ms));
+	struct timeval tv;
+	tv.tv_sec = ms / 1000;
+	tv.tv_usec = ms - (ms / 1000)*1000;
+	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv));
+}
+
+int socketCheckForWritability(SOCKET sock, uint32_t ms)
+{
+	FD_SET writefds;
+	FD_SET excptfds;
+	FD_ZERO(&writefds);
+	FD_ZERO(&excptfds);
+	FD_SET(sock, &writefds);
+	FD_SET(sock, &excptfds);
+
+	struct timeval tv;
+	tv.tv_sec = ms / 1000;
+	tv.tv_usec = ms - (ms/1000)*1000;
+
+	int available = select(0, NULL, &writefds, &excptfds, &tv);
+	if (available == -1)
+		PRINTLASTWSAERROR("Error in select() while checking for writability");
+
+	if (FD_ISSET(sock, &excptfds))
+		EXITLASTWSAERROR("Socket error is found while checking for writability");
+
+	return FD_ISSET(sock, &writefds);
+}
+
+int socketCheckForReadability(SOCKET sock, uint32_t ms)
+{
+	FD_SET readfds;
+	FD_SET excptfds;
+	FD_ZERO(&readfds);
+	FD_ZERO(&excptfds);
+	FD_SET(sock, &readfds);
+	FD_SET(sock, &excptfds);
+
+	struct timeval tv;
+	tv.tv_sec = ms / 1000;
+	tv.tv_usec = ms - (ms/1000)*1000;
+
+	int available = select(0, &readfds, NULL, &excptfds, &tv);
+	if (available == -1)
+		PRINTLASTWSAERROR("Error in select() while checking for readability");
+
+	if (FD_ISSET(sock, &excptfds))
+		EXITLASTWSAERROR("Socket error is found while checking for readability");
+
+	return FD_ISSET(sock, &readfds);
 }
 
 // ПРИНЦИП:

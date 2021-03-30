@@ -6,7 +6,7 @@
 uint64_t timeDelta;
 uint64_t curTime;
 
-static uint64_t _getSeconds(void)
+uint64_t getSeconds(void)
 {
 	struct timeval t;
 	gettimeofday(&t, NULL);
@@ -17,7 +17,7 @@ static uint64_t prevFrameTime;
 
 void updateFrameTime(void)
 {
-	uint64_t time = _getSeconds();
+	uint64_t time = getSeconds();
 	if (prevFrameTime)
 		timeDelta = time - prevFrameTime;
 	prevFrameTime = time;
@@ -26,5 +26,5 @@ void updateFrameTime(void)
 
 double getFrameTime(void)
 {
-	return (double)_getSeconds() - prevFrameTime;
+	return (double)getSeconds() - prevFrameTime;
 }

@@ -3,7 +3,7 @@
 #include "networking.h"
 #include "../../errors.h"
 
-#define MAX_REGISTRATION_REQUESTS 5		// how many reg packets will be send before giving up
+#define MAX_REGISTRATION_REQUESTS 10	// how many reg packets will be send before giving up
 
 typedef struct
 {
@@ -46,9 +46,10 @@ _Bool clientConnect(ClientAPI* client, uint32_t address, uint16_t port)//, uint3
 	client->addr = server_addr;
 
 	newPacket(REQUEST_REGISTRY);
-	addPacketData((char*)"DING DONG, WICKED BITCH IS DEAD!");
+	addPacketData((char*)"DING DONG, THE WICKED BITCH IS DEAD");
 
 	for (int i = MAX_REGISTRATION_REQUESTS; i--;) {
+
 		clientSendPacket(client);
 
 		if(clientWaitForPacket(client, REGISTRY_ACCEPTED, 1000))
@@ -65,7 +66,11 @@ _Bool clientConnect(ClientAPI* client, uint32_t address, uint16_t port)//, uint3
 
 void clientSendPacket(ClientAPI* client)
 {
-	if (sendto(client->sock, PACKET_BUFFER, PACKET_BUFFER_SIZE, NO_FLAGS, (SOCKADDR*)&client->addr, sizeof(client->addr)) == SOCKET_ERROR)
+	if (!socketCheckForWritability(client->sock, 1000))	// TODO automatic retry if needed
+	{
+		printf("Socket isn't available for send\n");
+	}
+	else if (sendto(client->sock, PACKET_BUFFER, PACKET_BUFFER_SIZE, NO_FLAGS, (SOCKADDR*)&client->addr, sizeof(client->addr)) == SOCKET_ERROR)
 		{
 			#ifdef STRICT_RUNTIME
 			EXITLASTWSAERROR("sendto function failed");
@@ -77,24 +82,35 @@ void clientSendPacket(ClientAPI* client)
 
 // wait for a particular, discarding everything else
 // returns true when packet is recieved
-_Bool clientWaitForPacket(ClientAPI* client, PacketType_T target, uint32_t ms_timer)
+_Bool clientWaitForPacket(ClientAPI* client, PacketType_T target, uint32_t delay)
 {
 	_Bool return_value = false;
-	DWORD delay = ms_timer;
+	uint64_t startTime = getSeconds();
 
-	socketSetRecvTimeout(client->sock, delay);
-
-	// Should we check to which address incoming packet is belonging? it might be not a server
-	char buffer[PACKET_MAX_SIZE] = {'\0'};
-	socketPeek(client->sock, buffer);
-	if (buffer[0] == target) {
-		client->id = *(UID*)&buffer[1];
-		return_value = true;
+	if (!socketCheckForReadability(client->sock, 1000))
+	{
+		printf("Socket isn't available for read\n");
 	}
-	socketPopInputQueue(client->sock);
+	else
+	{
+		socketSetRecvTimeout(client->sock, delay);
 
-	// don't forget to set delay to 0
-	socketSetRecvTimeout(client->sock, NO_DELAY);
+		while (!return_value && (getSeconds() - startTime < delay))
+		{
+			// Should we check to which address incoming packet is belonging? it might be not a server
+			char buffer[PACKET_MAX_SIZE] = {'\0'};
+			socketPeek(client->sock, buffer);
+			if (buffer[0] == target)
+			{	// Registy data recieved
+				client->id = *(UID*)&buffer[1];
+				return_value = true;
+			}
+			socketPopInputQueue(client->sock);
+		}
+
+		// Don't forget to set delay to 0 afterwards
+		socketSetRecvTimeout(client->sock, 0);
+	}
 
 	return return_value;
 }

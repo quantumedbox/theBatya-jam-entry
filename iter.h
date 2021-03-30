@@ -98,7 +98,6 @@ Iterator* 	getIterator			(Iterable* i);						// get iterator from iterable
   data_t 	nextIterator		(Iterator* it);						// main iteration function for both functional and linear types
     void 	setIteratorFunc 	(Iterator* it, IterFunction_T f);
 	void 	setIteratorMapFunc	(Iterator* it, IterMapFunction_T f);
-
     void* 	stopIterator		(Iterator* it);
 
 #define     _S 	static 	// Internal realisation

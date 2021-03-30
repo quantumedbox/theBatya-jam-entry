@@ -44,28 +44,45 @@ GLFWwindow* initScreen(uint width, uint height);
 void 		initOpenGL(void);
 void 		appClosure(void);
 
-int main(int argc, char** argv)
+ServerAPI* server;
+ClientAPI* client;
+
+// OPTIONS
+_Bool OPT_DONOTEXIT;
+
+void dissectArgs(int argc, const char** argv)
 {
-	ServerAPI* server;
-	ClientAPI* client;
+	#define arg_is(str) !strcmp(argv[i], str)
 
-	if (argc >= 2 && !strcmp(argv[1], "host"))
+	for (int i = 0; i < argc; i++)
 	{
-		initWSA();
-		server = newServerAPI();
-		initServer(server, LOCALHOST, DEFAULT_LISTENING_PORT, DEFAULT_ANSWERING_PORT);
-
-		printServerInfo(server);
-	}
-	else if (argc >= 2 && !strcmp(argv[1], "client"))
-	{
-		initWSA();
-		client = newClientAPI();
-		if (!clientConnect(client, LOCALHOST, DEFAULT_LISTENING_PORT))
+		if (arg_is("host"))
 		{
-			exit('!');
+			initWSA();
+			server = newServerAPI();
+			initServer(server, LOCALHOST, DEFAULT_LISTENING_PORT, DEFAULT_ANSWERING_PORT);
+
+			printServerInfo(server);
+		}
+		else if (arg_is("client"))
+		{
+			initWSA();
+			client = newClientAPI();
+			if (!clientConnect(client, LOCALHOST, DEFAULT_LISTENING_PORT))
+			{
+				exit('!');
+			}
+		}
+		else if (arg_is("-donotexit"))
+		{
+			OPT_DONOTEXIT = true;
 		}
 	}
+}
+
+int main(int argc, const char** argv)
+{
+	dissectArgs(argc, argv);
 
 	Engine gameEngine;
 	initEngine(&gameEngine, 600, 600);
@@ -86,6 +103,7 @@ int main(int argc, char** argv)
 	gameLoop(gameEngine);
 
 	appClosure();
+	return 0;
 }
 
 GLFWwindow* initScreen(uint width, uint height)
@@ -120,8 +138,16 @@ void initOpenGL(void)
 void appClosure(void)
 {
 	glfwTerminate();
-	#ifdef RELEASE
+	if (OPT_DONOTEXIT == true)
+	{
+		printf("press any key to finish...\n");
+		getchar();
+	}
+	else
+	{
+		#ifdef RELEASE
 		printf(afterText);
 		getchar();
-	#endif
+		#endif
+	}
 }
