@@ -10,16 +10,17 @@ void game_keyCallback(GLFWwindow* window, int key, int scancode, int action, int
 void game_cursorPosCallback(GLFWwindow* window, double x, double y);
 void game_windowResizeCallback(GLFWwindow* window, int width, int height);
 void game_initFreecamLayount(KeyLayout* layout);
+void game_focusCallback(GLFWwindow* window, int focused);
 
 
 Engine* gameEngine;
 
 
 // TODO Нужно думать, каким именно образом разделять клиент и сервер
+// Текущее положение совершенно неприменимо к раздельныму выполнению
 
 void gameLoop(Engine engine)
 {
-	glfwSetInputMode(engine.window_ptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	initPredefinedGeometry();
 
 	gameEngine = &engine;
@@ -29,17 +30,14 @@ void gameLoop(Engine engine)
 	glfwSetKeyCallback(engine.window_ptr, game_keyCallback);
 	glfwSetCursorPosCallback(engine.window_ptr, game_cursorPosCallback);
 	glfwSetWindowSizeCallback(engine.window_ptr, game_windowResizeCallback);
+	glfwSetWindowFocusCallback(engine.window_ptr, game_focusCallback);
+
+	glfwSetInputMode(gameEngine->window_ptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	GLint program = newRenderProgram("shaders/base_vertex.vert", "shaders/base_fragment.frag");
 	TextureObj* fire_texture = newTextureObj("assets/Fire16x.png", 16, 16);
-	// TextureObj* table_texture = newTextureObj("assets/table.gif", 0, 0);
 
 	SceneObj* scene = addSceneObj(engine.mainScene, NestedSceneType);
-	// SceneObj* table = addSceneObj(engine.mainScene, GameObjType);
-	// obj_setRenderProgram(table, program);
-	// obj_setGeometry(table, &Sprite);
-	// obj_setTextureObj(table, table_texture);
-	// obj_setScalePlaneRelative(table, 10.f);
 
 	for (int i = 25; i--;)
 	{
@@ -87,6 +85,9 @@ void gameLoop(Engine engine)
 
 void game_keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	if (!glfwGetWindowAttrib(window, GLFW_FOCUSED))
+		return;
+
 	KeyBinding* bind = keyLayout_processKey(gameEngine->keyLayout, key);
 	if (bind == NULL)
 		return;
@@ -109,7 +110,9 @@ void game_cursorPosCallback(GLFWwindow* window, double x, double y)
 	static double last_x;
 	static double last_y;
 
-	cam_updateCursor(gameEngine->camera, x - last_x, y - last_y);
+	if (glfwGetWindowAttrib(window, GLFW_FOCUSED))
+		cam_updateCursor(gameEngine->camera, x - last_x, y - last_y);
+
 	last_x = x;
 	last_y = y;
 }
@@ -130,4 +133,12 @@ void game_initFreecamLayount(KeyLayout* layout)
 	keyLayout_bindNewKey(layout, GLFW_KEY_D, MOVE_RIGHT, MOVEMENT_KEY);
 
 	keyLayout_bindNewKey(layout, GLFW_KEY_ESCAPE, CLOSE_WINDOW, CONTROL_KEY);
+}
+
+void game_focusCallback(GLFWwindow* window, int focused)
+{
+	if (focused)
+		glfwSetInputMode(gameEngine->window_ptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	else
+		glfwSetInputMode(gameEngine->window_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }

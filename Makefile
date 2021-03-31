@@ -9,7 +9,7 @@ server: # freetype # TODO server should not depend on the graphics in the future
 	$(CC) $(CFLAGS) main.c -g -o server.exe $(COMMON_DEPENDENCIES) -DSERVER_BUILD=1 
 
 client: # freetype
-	$(CC) $(CFLAGS) main.c -g -o client.exe $(COMMON_DEPENDENCIES) -DCLIENT_BUILD=1 
+	$(CC) $(CFLAGS) main.c -g -o client.exe $(COMMON_DEPENDENCIES) -DCLIENT_BUILD=1
 
 # freetype:
 # 	gcc submodules/freetype/freetype.c -o freetype.o -lfreetype-gl

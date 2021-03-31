@@ -44,6 +44,7 @@ void 		appClosure(void);
 
 // OPTIONS
 _Bool OPT_DONOTEXIT;
+_Bool OPT_NOHOST;
 
 void dissectArgs(int argc, const char** argv)
 {
@@ -55,6 +56,10 @@ void dissectArgs(int argc, const char** argv)
 		{
 			OPT_DONOTEXIT = true;
 		}
+		else if (arg_is("-nohost"))
+		{
+			OPT_NOHOST = true;
+		}
 	}
 }
 
@@ -63,11 +68,14 @@ int main(int argc, const char** argv)
 	dissectArgs(argc, argv);
 
 	#ifdef CLIENT_BUILD
-	ClientAPI* client;
+	if (!OPT_NOHOST)
+	{
+		ClientAPI* client;
 		initWSA();
 		client = newClientAPI();
 		if (!clientConnect(client, LOCALHOST, DEFAULT_LISTENING_PORT))
 			exit('!');
+	}
 	#endif
 	#ifdef SERVER_BUILD
 		ServerAPI* server;
