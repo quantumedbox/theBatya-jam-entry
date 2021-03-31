@@ -5,6 +5,9 @@
 
 #define MAX_REGISTRATION_REQUESTS 10	// how many reg packets will be send before giving up
 
+#define CLIENT_WRITABILITY_TIMEO 100
+#define CLIENT_READABILITY_TIMEO 100
+
 typedef struct
 {
 	SOCKET 			sock;				// initialized UDP IPv4 socket
@@ -16,7 +19,7 @@ ClientAPI;
 
 
 ClientAPI* 		newClientAPI		();
-	 void 		clientSendPacket	(ClientAPI*);
+	_Bool 		clientSendPacket	(ClientAPI*);
 	_Bool 		clientConnect		(ClientAPI*, uint32_t address, 	uint16_t port);
 	_Bool 		clientWaitForPacket	(ClientAPI*, PacketType_T, 		uint32_t ms);
 
@@ -52,7 +55,7 @@ _Bool clientConnect(ClientAPI* client, uint32_t address, uint16_t port)//, uint3
 
 		clientSendPacket(client);
 
-		if(clientWaitForPacket(client, REGISTRY_ACCEPTED, 1000))
+		if(clientWaitForPacket(client, REGISTRY_ACCEPTED, CLIENT_READABILITY_TIMEO))
 		{
 			printf("registred with an ID of %llu\n", client->id);
 			return true;
@@ -64,20 +67,25 @@ _Bool clientConnect(ClientAPI* client, uint32_t address, uint16_t port)//, uint3
 	return false;
 }
 
-void clientSendPacket(ClientAPI* client)
+_Bool clientSendPacket(ClientAPI* client)
 {
-	if (!socketCheckForWritability(client->sock, 1000))	// TODO automatic retry if needed
-	{
+	if (!socketCheckForWritability(client->sock, CLIENT_WRITABILITY_TIMEO)) {
 		printf("Socket isn't available for send\n");
+		return false;
 	}
-	else if (sendto(client->sock, PACKET_BUFFER, PACKET_BUFFER_SIZE, NO_FLAGS, (SOCKADDR*)&client->addr, sizeof(client->addr)) == SOCKET_ERROR)
-		{
-			#ifdef STRICT_RUNTIME
-			EXITLASTWSAERROR("sendto function failed");
-			#else
-			PRINTLASTWSAERROR("sendto function failed");
-			#endif
-		}
+	if (sendto(client->sock, PACKET_BUFFER, PACKET_BUFFER_SIZE, NO_FLAGS, (SOCKADDR*)&client->addr, sizeof(client->addr)) == SOCKET_ERROR)
+	{
+		#ifdef STRICT_RUNTIME
+		EXITLASTWSAERROR("sendto function failed");
+		#else
+		PRINTLASTWSAERROR("sendto function failed");
+		#endif
+
+		return false;
+	}
+	else {
+		return true;
+	}
 }
 
 // wait for a particular, discarding everything else

@@ -66,6 +66,7 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 	static GLint projectionMatAddress;
 	static GLint subtextureCoordsAddress;
 	static GLint subtextureSizeAddress;
+	static GLint scaleAddress;
 
 	if ((currentGeometryBind != obj->geometry || currentGeometryBind == NULL)
 													&& obj->geometry != NULL)
@@ -84,11 +85,12 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 		glUseProgram(obj->renderProgram);
 		OPENGL_CHECK("(renderObj) Cannot bind given render program");
 
-		modelMatAddress = glGetUniformLocation(obj->renderProgram, "model");
-		viewMatAddress = glGetUniformLocation(obj->renderProgram, "view");
-		projectionMatAddress = glGetUniformLocation(obj->renderProgram, "projection");
+		modelMatAddress 		= glGetUniformLocation(obj->renderProgram, "model");
+		viewMatAddress 			= glGetUniformLocation(obj->renderProgram, "view");
+		projectionMatAddress 	= glGetUniformLocation(obj->renderProgram, "projection");
 		subtextureCoordsAddress = glGetUniformLocation(obj->renderProgram, "subtextureCoords");
-		subtextureSizeAddress = glGetUniformLocation(obj->renderProgram, "subtextureSize");
+		subtextureSizeAddress 	= glGetUniformLocation(obj->renderProgram, "subtextureSize");
+		scaleAddress 			= glGetUniformLocation(obj->renderProgram, "scale");
 		OPENGL_CHECK("(renderObj) Cannot get shader uniform locations");
 	}
 
@@ -102,23 +104,10 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 	}
 
 	mat4 modelMat = GLM_MAT4_IDENTITY_INIT;
-	// Camera-relative lookUp axis
-		// vec3 lookUpVe = GLM_VEC3_ZERO_INIT;
-		// glm_vec3_negate_to(camera->cameraUp, lookUpVe);
+	glm_translate(modelMat, pos);
 
-	// Bilboarding
-	// TODO Стоит перенести трансформации на шейдер, ибо расчёты на процессоре для большого количества объектов крайне требовательны
-	vec3 lookAt = GLM_VEC3_ZERO_INIT;
-	glm_vec3_sub(camera->cameraPos, pos, lookAt);
-	glm_lookat(GLM_VEC3_ZERO, lookAt, (vec3){0.0, -1.0, 0.0}, modelMat);
-	glm_scale_uni(modelMat, obj->scale);
-
-	mat4 viewMat = GLM_MAT4_IDENTITY_INIT;
-	glm_mat4_copy(camera->view, viewMat);
-	glm_translate(viewMat, pos);
-
-	glUniformMatrix4fv(viewMatAddress, 1, GL_FALSE, viewMat[0]);
-	glUniformMatrix4fv(projectionMatAddress, 1, GL_FALSE, camera->projection[0]);
+	glUniformMatrix4fv(viewMatAddress, 1, GL_FALSE, camera->view[0]);	// TODO bind single time for each unique render program
+	glUniformMatrix4fv(projectionMatAddress, 1, GL_FALSE, camera->projection[0]);	// TODO
 	glUniformMatrix4fv(modelMatAddress, 1, GL_FALSE, modelMat[0]);
 
 	vec2 texCoords;
@@ -130,6 +119,8 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 
 	glUniform2f(subtextureCoordsAddress, texCoords[0], texCoords[1]);
 	glUniform2f(subtextureSizeAddress, texSubSize[0], texSubSize[1]);
+
+	glUniform1f(scaleAddress, obj->scale);
 
 	glDrawArrays(GL_TRIANGLES, 0, obj->geometry->vertexCount);
 	OPENGL_CHECK("(renderObj) While drawing triangles from buffers");

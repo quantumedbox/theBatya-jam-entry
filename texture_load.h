@@ -12,7 +12,7 @@ void populateTextureObjFromFile(TextureObj* obj, char* dir)
 	glBindTexture(GL_TEXTURE_2D, texture);
 
 	int width, height, channels;
-	// stbi_set_flip_vertically_on_load(1);
+	stbi_set_flip_vertically_on_load(1);
 	unsigned char *imagedata = stbi_load(dir, &width, &height, &channels, 0);
 
 	obj->size[0] = width; obj->size[1] = height;

@@ -48,6 +48,7 @@ void gameLoop(Engine engine)
 		obj_setPosition(obj, (vec3){rand()%25, 0, rand()%25});
 		obj_setTextureObj(obj, fire_texture);
 		obj_setFrame(obj, rand()%9);
+		obj_setScale(obj, ((float)rand()/RAND_MAX) * 2);
 	}
 
 	while (!glfwWindowShouldClose(engine.window_ptr))

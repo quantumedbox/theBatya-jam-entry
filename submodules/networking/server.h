@@ -10,6 +10,8 @@
 #define REG_BANNED		2
 #define REG_CONNECTED	4
 
+#define SERVER_WRITABILITY_TIMEO 100
+
 typedef struct
 {
 	UID				id;
@@ -40,7 +42,7 @@ ServerAPI* 	newServerAPI();
 
 SOCKADDR_IN bindSocketToPort(SOCKET, uint32_t ip, uint16_t port);
 
-	 void 	serverSendPacketToAddr(ServerAPI*, SOCKADDR_IN addr);
+	_Bool 	serverSendPacketToAddr(ServerAPI*, SOCKADDR_IN addr);
 
 
 ServerAPI* newServerAPI()
@@ -91,16 +93,25 @@ _Bool initServer(ServerAPI* server, uint32_t ip, uint16_t listening_port, uint16
 	return true;
 }
 
-void serverSendPacketToAddr(ServerAPI* server, SOCKADDR_IN addr)
+_Bool serverSendPacketToAddr(ServerAPI* server, SOCKADDR_IN addr)
 {
+	if (!socketCheckForWritability(server->answering_sock, SERVER_WRITABILITY_TIMEO)) {
+		printf("Answer socket isn't available for send\n");
+		return false;
+	}
 	if (sendto(server->answering_sock, PACKET_BUFFER, PACKET_BUFFER_SIZE, NO_FLAGS, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR)
-		{
-			#ifdef STRICT_RUNTIME
-			EXITLASTWSAERROR("sendto function failed");
-			#else
-			PRINTLASTWSAERROR("sendto function failed");
-			#endif
-		}
+	{
+		#ifdef STRICT_RUNTIME
+		EXITLASTWSAERROR("sendto function failed");
+		#else
+		PRINTLASTWSAERROR("sendto function failed");
+		#endif
+
+		return false;
+	}
+	else {
+		return true;
+	}
 }
 
 void printServerInfo(ServerAPI* server)
