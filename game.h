@@ -9,7 +9,7 @@
 void game_keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void game_cursorPosCallback(GLFWwindow* window, double x, double y);
 void game_windowResizeCallback(GLFWwindow* window, int width, int height);
-void game_initFreecamLayount(KeyLayout* layout);
+void game_initCamLayout(KeyLayout* layout);
 void game_focusCallback(GLFWwindow* window, int focused);
 
 
@@ -25,7 +25,7 @@ void gameLoop(Engine engine)
 
 	gameEngine = &engine;
 
-	game_initFreecamLayount(engine.keyLayout);
+	game_initCamLayout(engine.keyLayout);
 
 	glfwSetKeyCallback(engine.window_ptr, game_keyCallback);
 	glfwSetCursorPosCallback(engine.window_ptr, game_cursorPosCallback);
@@ -45,7 +45,7 @@ void gameLoop(Engine engine)
 		// TODO State machine for single declaration of obj properties for the all new
 		obj_setRenderProgram(obj, program);
 		obj_setGeometry(obj, &Sprite);
-		obj_setPosition(obj, (vec3){rand()%25, 0, rand()%25});
+		obj_setPosition(obj, (vec3){rand()%100, rand()%25, rand()%100});
 		obj_setTextureObj(obj, fire_texture);
 		obj_setFrame(obj, rand()%9);
 		obj_setScale(obj, ((float)rand()/RAND_MAX) * 2);
@@ -126,7 +126,7 @@ void game_windowResizeCallback(GLFWwindow* window, int width, int height)
 	gameEngine->screen_height = height;
 }
 
-void game_initFreecamLayount(KeyLayout* layout)
+void game_initCamLayout(KeyLayout* layout)
 {
 	keyLayout_bindNewKey(layout, GLFW_KEY_W, MOVE_FORWARD, MOVEMENT_KEY);
 	keyLayout_bindNewKey(layout, GLFW_KEY_S, MOVE_BACKWARD, MOVEMENT_KEY);

@@ -7,7 +7,7 @@
 #define NEAR_CLIPPING_PLANE 0.1f
 #define FAR_CLIPPING_PLANE 200.f
 
-#define CONST_CAM_SPEED 0.005f
+#define CONST_CAM_SPEED 0.01f
 #define CONST_MOUSE_SENSETIVITY 0.08f
 #define CONST_CAM_LERP 0.005f
 
@@ -96,21 +96,24 @@ void cam_processInput(Camera* cam)
 {
 	vec3 velocity = GLM_VEC3_ZERO_INIT;
 
+	vec3 sideCross;
+	glm_vec3_cross(cam->cameraFront, cam->cameraUp, sideCross);
+
+	vec3 frontCross;
+	glm_vec3_copy(sideCross, frontCross);
+	glm_vec3_rotate(frontCross, glm_rad(90.0f), (vec3){0.0, 1.0, 0.0});
+	
 	if (movementState & MOVE_FORWARD) {
-		glm_vec3_add(velocity, cam->cameraFront, velocity);
+		glm_vec3_add(velocity, frontCross, velocity);
 	}
 	if (movementState & MOVE_BACKWARD) {
-		glm_vec3_sub(velocity, cam->cameraFront, velocity);
+		glm_vec3_sub(velocity, frontCross, velocity);
 	}
 	if (movementState & MOVE_LEFT) {
-		vec3 cross;
-		glm_vec3_cross(cam->cameraFront, cam->cameraUp, cross);
-		glm_vec3_sub(velocity, cross, velocity);
+		glm_vec3_sub(velocity, sideCross, velocity);
 	}
 	if (movementState & MOVE_RIGHT) {
-		vec3 cross;
-		glm_vec3_cross(cam->cameraFront, cam->cameraUp, cross);
-		glm_vec3_add(velocity, cross, velocity);
+		glm_vec3_add(velocity, sideCross, velocity);
 	}
 	if (movementState & MOVE_UP) {
 		velocity[1] += 1;
@@ -119,7 +122,7 @@ void cam_processInput(Camera* cam)
 		velocity[1] -= 1;
 	}
 
-	glm_vec3_norm(velocity);
+	glm_vec3_normalize(velocity);
 
 	float speed = CONST_CAM_SPEED * timeDelta;
 	glm_vec3_scale(velocity, speed, velocity);

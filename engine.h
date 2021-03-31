@@ -55,7 +55,7 @@ SceneObj* addSceneObj(Scene* scene, SceneObjType type)
 		WARNING(CREATED_UNKNOWN_SCENEOBJ_TYPE);
 	}
 
-	logf("adding scene_obj at %p to scene %p\n", new, scene->objs);
+	// logf("adding scene_obj at %p to scene %p\n", new, scene->objs);
 	addIter(scene->objs, new, ON_HEAP);
 
 	return new;
@@ -71,7 +71,7 @@ __forceinline GameObj* newGameObj()
 
 void delScene(Scene* scene)
 {
-	logf("deleting scene at %p\n", scene);
+	// logf("deleting scene at %p\n", scene);
 
 	Iterator* iter = getIterator(scene->objs);
 	while (true)
@@ -79,7 +79,7 @@ void delScene(Scene* scene)
 		SceneObj* obj = next_iteration_of_type(iter, SceneObj);
 		check_stop_iteration(obj);
 
-		logf("freeing scene_obj at %p\n", obj);
+		// logf("freeing scene_obj at %p\n", obj);
 
 		switch (obj->type) {
 		case NestedSceneType:

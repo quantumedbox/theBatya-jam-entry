@@ -7,15 +7,15 @@
 #include <cglm/cglm.h>
 
 // #define RELEASE
-#define DEBUG
-// #define LOG_IN_FILE	// TODO define it to save all the log in the file rather than print on console
-
-#define logf(fmt, ...) printf(fmt, __VA_ARGS__);	// TODO should be replaced with fprintf to stderr
+#ifdef DEBUG
+//#	define LOG_IN_FILE	// TODO define it to save all the log in the file rather than print on console
+#	define logf(fmt, ...) printf(fmt, __VA_ARGS__);	// TODO should be replaced with fprintf to stderr
+#	define CGLM_DEFINE_PRINTS
+#endif
 
 #ifdef RELEASE
-#undef logf
-#define logf //
-#define STRICT_RUNTIME	// don't ignore any errors
+#	define logf //
+#	define STRICT_RUNTIME	// don't ignore any errors
 #endif
 
 const char* afterText = "Thanks for playing!\n"\

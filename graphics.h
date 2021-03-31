@@ -169,13 +169,6 @@ void initPredefinedGeometry(void)
 	glBindVertexArray(0);
 }
 
-// void setIdentityMatForRotation(mat4 mat)
-// {
-// 	mat[0][0] = 1; mat[0][1] = 0; mat[0][2] = 0; 
-// 	mat[0][0] = 0; mat[0][1] = 1; mat[0][2] = 0; 
-// 	mat[0][0] = 0; mat[0][1] = 0; mat[0][2] = 1; 
-// }
-
 TextureObj* newTextureObj(char* textureDir, uint subWidth, uint subHeight)
 {
 	TextureObj* new = (TextureObj*)malloc(sizeof(TextureObj));
