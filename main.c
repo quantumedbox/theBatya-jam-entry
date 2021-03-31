@@ -6,8 +6,6 @@
 #include "freetype.h"
 #include <cglm/cglm.h>
 
-#define CLIENT_BUILD	// TODO it all should be in a Makefile
-
 // #define RELEASE
 #define DEBUG
 // #define LOG_IN_FILE	// TODO define it to save all the log in the file rather than print on console
@@ -44,9 +42,6 @@ GLFWwindow* initScreen(uint width, uint height);
 void 		initOpenGL(void);
 void 		appClosure(void);
 
-ServerAPI* server;
-ClientAPI* client;
-
 // OPTIONS
 _Bool OPT_DONOTEXIT;
 
@@ -56,24 +51,7 @@ void dissectArgs(int argc, const char** argv)
 
 	for (int i = 0; i < argc; i++)
 	{
-		if (arg_is("host"))
-		{
-			initWSA();
-			server = newServerAPI();
-			initServer(server, LOCALHOST, DEFAULT_LISTENING_PORT, DEFAULT_ANSWERING_PORT);
-
-			printServerInfo(server);
-		}
-		else if (arg_is("client"))
-		{
-			initWSA();
-			client = newClientAPI();
-			if (!clientConnect(client, LOCALHOST, DEFAULT_LISTENING_PORT))
-			{
-				exit('!');
-			}
-		}
-		else if (arg_is("-donotexit"))
+		if (arg_is("-donotexit"))
 		{
 			OPT_DONOTEXIT = true;
 		}
@@ -83,6 +61,23 @@ void dissectArgs(int argc, const char** argv)
 int main(int argc, const char** argv)
 {
 	dissectArgs(argc, argv);
+
+	#ifdef CLIENT_BUILD
+	ClientAPI* client;
+		initWSA();
+		client = newClientAPI();
+		if (!clientConnect(client, LOCALHOST, DEFAULT_LISTENING_PORT))
+			exit('!');
+	#endif
+	#ifdef SERVER_BUILD
+		ServerAPI* server;
+
+		initWSA();
+		server = newServerAPI();
+		initServer(server, LOCALHOST, DEFAULT_LISTENING_PORT, DEFAULT_ANSWERING_PORT);
+
+		printServerInfo(server);
+	#endif
 
 	Engine gameEngine;
 	initEngine(&gameEngine, 600, 600);
@@ -98,9 +93,9 @@ int main(int argc, const char** argv)
 	);
 
 	initOpenGL();
-	#endif
 
 	gameLoop(gameEngine);
+	#endif	// TODO Временно сервер не входит в игровой луп
 
 	appClosure();
 	return 0;

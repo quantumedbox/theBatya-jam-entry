@@ -1,4 +1,4 @@
 @echo off
 title NetworkTest
-start cmd /C build client -donotexit
-start cmd /C build host -donotexit
+start cmd /C client -donotexit
+start cmd /C server -donotexit
