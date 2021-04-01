@@ -5,8 +5,8 @@
 
 #define MAX_REGISTRATION_REQUESTS 10	// how many reg packets will be send before giving up
 
-#define CLIENT_WRITABILITY_TIMEO 100
-#define CLIENT_READABILITY_TIMEO 100
+#define CLIENT_WRITABILITY_TIMEO 1000
+#define CLIENT_READABILITY_TIMEO 1000
 
 typedef struct
 {
@@ -95,7 +95,7 @@ _Bool clientWaitForPacket(ClientAPI* client, PacketType_T target, uint32_t delay
 	_Bool return_value = false;
 	uint64_t startTime = getSeconds();
 
-	if (!socketCheckForReadability(client->sock, 1000))
+	if (!socketCheckForReadability(client->sock, CLIENT_READABILITY_TIMEO))
 	{
 		printf("Socket isn't available for read\n");
 	}

@@ -170,7 +170,7 @@ int socketCheckForWritability(SOCKET sock, uint32_t ms)
 
 	struct timeval tv;
 	tv.tv_sec = ms / 1000;
-	tv.tv_usec = ms - (ms/1000)*1000;
+	tv.tv_usec = (ms - (ms / 1000)*1000) * 1000;
 
 	int available = select(0, NULL, &writefds, &excptfds, &tv);
 	if (available == -1)
@@ -193,7 +193,7 @@ int socketCheckForReadability(SOCKET sock, uint32_t ms)
 
 	struct timeval tv;
 	tv.tv_sec = ms / 1000;
-	tv.tv_usec = ms - (ms/1000)*1000;
+	tv.tv_usec = (ms - (ms / 1000)*1000) * 1000;
 
 	int available = select(0, &readfds, NULL, &excptfds, &tv);
 	if (available == -1)
