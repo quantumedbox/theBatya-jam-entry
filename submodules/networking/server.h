@@ -1,6 +1,8 @@
 #pragma once
 
 #include "networking.h"
+#include "queue-thread.h"
+
 #include "../../errors.h"
 #include "../../iter.h"
 
@@ -77,18 +79,24 @@ _Bool initServer(ServerAPI* server, uint32_t ip, uint16_t listening_port, uint16
 	server->listening_addr = bindSocketToPort(server->listening_sock, ip, listening_port);
 	server->answering_addr = bindSocketToPort(server->answering_sock, ip, answering_port);
 
-	char buffer[PACKET_MAX_SIZE] = {'\0'};
-	SOCKADDR_IN addr_from;
-	int addr_from_size = sizeof(addr_from);
-	recvfrom(
-		server->listening_sock, buffer,
-		PACKET_MAX_SIZE, 0,
-		(SOCKADDR*)&addr_from, &addr_from_size
-	);
+	SocketQueueHandle* queue = socketQueueNew(server->listening_sock);
 
-	newPacket(REGISTRY_ACCEPTED);
-	addPacketData((UID)2525252);
-	serverSendPacketToAddr(server, addr_from);
+	// char buffer[PACKET_MAX_SIZE] = {'\0'};
+	// SOCKADDR_IN addr_from;
+	// int addr_from_size = sizeof(addr_from);
+	// recvfrom(
+	// 	server->listening_sock, buffer,
+	// 	PACKET_MAX_SIZE, 0,
+	// 	(SOCKADDR*)&addr_from, &addr_from_size
+	// );
+
+	// newPacket(REGISTRY_ACCEPTED);
+	// addPacketData((UID)2525252);
+	// serverSendPacketToAddr(server, addr_from);
+
+	while(true);
+
+	socketQueueExit(queue);
 
 	return true;
 }

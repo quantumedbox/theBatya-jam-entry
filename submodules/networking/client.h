@@ -12,7 +12,6 @@ typedef struct
 {
 	SOCKET 			sock;				// initialized UDP IPv4 socket
 	SOCKADDR_IN 	addr;				// server address
-
 	UID 			id;
 }
 ClientAPI;

@@ -21,6 +21,10 @@ typedef enum error {
 	ITER_IS_NOT_SPECIFIED_ERR,
 	ITER_DATA_IS_NOT_SPECIFIED_ERR,
 	WSA_STARTUP_ERR,
+	THREAD_STARTUP_ERR,
+	THREAD_JOIN_ERR,
+	QUEUE_NO_FREE_PAGE_ERR,
+	RACING_COND_ERR,
 }
 Error_T;
 
@@ -37,6 +41,10 @@ char* ERRORTEXT[] = {
 	"iterable wasn't specified in default addIter call\n",
 	"iterable data wasnt' specified in default addIter call\n",
 	"cannot start the WSA service\n",
+	"cannot create a new thread\n",
+	"cannot join with a given thread\n",
+	"not a single available page to write\n",
+	"read and write between threads are set to the same page\nit will cause racing condition\n"
 };
 
 typedef enum warning {

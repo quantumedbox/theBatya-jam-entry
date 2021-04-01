@@ -19,7 +19,8 @@
 #define DEFAULT_ANSWERING_PORT 	49124	// for local machine hosting
 
 #ifndef PACKET_MAX_SIZE
-#	define PACKET_MAX_SIZE ETHERNET_MTU	// defaults to ethernet
+#define PACKET_MAX_SIZE ETHERNET_MTU	// defaults to ethernet
+										// TODO get MTU of network on registration, not on compile time
 #endif
 
 #define EXITLASTWSAERROR(description) 	WSAERROR(description, WSAGetLastError())
