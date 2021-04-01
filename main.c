@@ -6,11 +6,11 @@
 #include "freetype.h"
 #include <cglm/cglm.h>
 
+// TODO define clearly all debug and release options
 // #define RELEASE
 #ifdef DEBUG
 //#	define LOG_IN_FILE	// TODO define it to save all the log in the file rather than print on console
-#	define logf(fmt, ...) printf(fmt, __VA_ARGS__);	// TODO should be replaced with fprintf to stderr
-#	define CGLM_DEFINE_PRINTS
+#	define logf(fmt, ...) printf(fmt, __VA_ARGS__);	// TODO should be replaced with fprintf to stderr/stdout
 #endif
 
 #ifdef RELEASE
@@ -18,9 +18,9 @@
 #	define STRICT_RUNTIME	// don't ignore any errors
 #endif
 
-const char* afterText = "Thanks for playing!\n"\
-"The game was fully written in just 2 days in pure C!\n"\
-"BTW, source code is freely available at github:\n"\
+const char* afterText = "Tranks for playing!\n"\
+"Now this thing is not a 2 day jam project anymore...\n"\
+"But code is still available at github!\n"\
 "https://github.com/quantumedbox/theBatya-jam-entry\n\n"\
 "press any key to close this prompt...";
 

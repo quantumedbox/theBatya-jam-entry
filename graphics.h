@@ -73,7 +73,7 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 	{
 		currentGeometryBind = obj->geometry;
 
-		glBindVertexArray(obj->geometry->VAO);
+		glBindVertexArray(obj->geometry->VAO);	// TODO Separete VAO and vertex buffer bind
 		OPENGL_CHECK("(renderObj) In the proccess of VAO binding");
 	}
 
@@ -106,8 +106,8 @@ void renderObj(RenderObj* obj, vec3 pos, vec3 orientation, Camera* camera)
 	mat4 modelMat = GLM_MAT4_IDENTITY_INIT;
 	glm_translate(modelMat, pos);
 
-	glUniformMatrix4fv(viewMatAddress, 1, GL_FALSE, camera->view[0]);	// TODO bind single time for each unique render program
-	glUniformMatrix4fv(projectionMatAddress, 1, GL_FALSE, camera->projection[0]);	// TODO
+	glUniformMatrix4fv(viewMatAddress, 1, GL_FALSE, camera->view[0]);	// TODO Single bind per frame for each unique render program
+	glUniformMatrix4fv(projectionMatAddress, 1, GL_FALSE, camera->projection[0]);
 	glUniformMatrix4fv(modelMatAddress, 1, GL_FALSE, modelMat[0]);
 
 	vec2 texCoords;

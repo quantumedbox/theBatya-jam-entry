@@ -39,7 +39,7 @@ void gameLoop(Engine engine)
 
 	SceneObj* scene = addSceneObj(engine.mainScene, NestedSceneType);
 
-	for (int i = 25; i--;)
+	for (int i = 100; i--;)
 	{
 		SceneObj* obj = addSceneObj(scene->scene, GameObjType);
 		// TODO State machine for single declaration of obj properties for the all new
@@ -48,14 +48,12 @@ void gameLoop(Engine engine)
 		obj_setPosition(obj, (vec3){rand()%100, rand()%25, rand()%100});
 		obj_setTextureObj(obj, fire_texture);
 		obj_setFrame(obj, rand()%9);
-		obj_setScale(obj, ((float)rand()/RAND_MAX) * 2);
+		obj_setScale(obj, ((float)rand()/RAND_MAX) + 1);
 	}
 
 	while (!glfwWindowShouldClose(engine.window_ptr))
 	{
 		updateFrameTime();
-
-		scene->scene->position[0] -= 0.0001;
 
 		glClearColor(
 			engine.graphicsPref.clearColor[0],

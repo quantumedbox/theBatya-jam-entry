@@ -5,16 +5,17 @@
 #include "input.h"
 #include "camera.h"
 
-void initEngine(Engine* engine, uint width, uint height);
-Scene* newScene();
-GameObj* newGameObj();
-SceneObj* addSceneObj(Scene* scene, SceneObjType type);
-void renderScene(Scene* scene, Camera* camera);
-void delScene(Scene* scene);
-void delGameObj(GameObj* obj);
-void freeEngineResources(Engine* engine);
+void 		initEngine(Engine* engine, uint width, uint height);
+Scene* 		newScene();
+GameObj* 	newGameObj();
+SceneObj* 	addSceneObj(Scene* scene, SceneObjType type);
+void 		renderScene(Scene* scene, Camera* camera);
+void 		delScene(Scene* scene);
+void 		delGameObj(GameObj* obj);
+void 		freeEngineResources(Engine* engine);
 
-void processAnimations(data_t obj);
+void 		processAnimations(data_t obj);
+
 
 void initEngine(Engine* engine, uint width, uint height)
 {
@@ -74,7 +75,7 @@ void delScene(Scene* scene)
 	// logf("deleting scene at %p\n", scene);
 
 	Iterator* iter = getIterator(scene->objs);
-	while (true)
+	while_iter(iter)
 	{
 		SceneObj* obj = next_iteration_of_type(iter, SceneObj);
 		check_stop_iteration(obj);
@@ -103,6 +104,7 @@ __forceinline void delGameObj(GameObj* obj)
 {
 	if (obj->renderObj != NULL)
 		delRenderObj(obj->renderObj);
+	free(obj);
 }
 
 __forceinline void freeEngineResources(Engine* engine)
@@ -118,7 +120,7 @@ void renderScene(Scene* scene, Camera* camera)	// TODO Geometry context that is 
 	setIteratorMapFunc(iter, processAnimations);
 	#endif
 
-	while (true)
+	while_iter(iter)
 	{
 		SceneObj* obj = next_iteration_of_type(iter, SceneObj);
 		check_stop_iteration(obj);

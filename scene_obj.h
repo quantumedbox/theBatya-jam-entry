@@ -21,6 +21,8 @@ void obj_setGeometry(SceneObj* obj, Geometry* geometry)
 
 void obj_setTextureObj(SceneObj* obj, TextureObj* textureObj)
 {
+	// TODO Automaticly set vertex ratio
+
 	if (obj->type != GameObjType) {
 		WARNING(SETTING_OBJ_OF_INCOMPATIBLE_TYPE_WARN);
 		return;
