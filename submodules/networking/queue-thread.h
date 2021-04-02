@@ -90,7 +90,22 @@ static void* socketQueueProcess(void* hanle)
 
 		if (socketCheckForReadability(self->socket, 1000))
 		{
-
+			char buffer[PACKET_MAX_SIZE] = {'\0'};
+			SOCKADDR_IN addr_from;
+			int addr_from_size = sizeof(addr_from);
+			recvfrom(
+				self->socket, buffer,
+				PACKET_MAX_SIZE, 0,
+				(SOCKADDR*)&addr_from, &addr_from_size
+			);
+			printf(
+				"%d.%d.%d.%d: %s\n",
+				addr_from.sin_addr.S_un.S_un_b.s_b1,
+				addr_from.sin_addr.S_un.S_un_b.s_b2,
+				addr_from.sin_addr.S_un.S_un_b.s_b3,
+				addr_from.sin_addr.S_un.S_un_b.s_b4,
+				buffer
+			);
 		}
 
 		// ...

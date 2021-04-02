@@ -77,9 +77,10 @@ typedef struct
 }
 Iterable;	// i
 
+// NULL as return means that the item did not pass a check
 typedef data_t (*IterFunction_T)(IterElem* in);
 
-// WARNING! It should never return NULL
+// Modifies the iterated data
 typedef void (*IterMapFunction_T)(data_t in);
 
 // Iteration is done via this
@@ -116,11 +117,10 @@ Iterator* 	getIterator			(Iterable* i);						// get iterator from iterable
 	void 	setIteratorMapFunc	(Iterator* it, IterMapFunction_T f);
     void* 	stopIterator		(Iterator* it);
 
-#define     _S 	static 	// Internal realisation
-_S  void 	_delElem			(Iterable* i, uint32_t idx, _Bool to_free);
-#undef _S
+// Internal realisation
+static void _delElem			(Iterable* i, uint32_t idx, _Bool to_free);
 
-// ------------------------------------------------------- Function implementations -- //
+// ---------------------------------------------------------------------- Functions -- //
 
 Iterable* newIter()	// New iterable
 {
@@ -169,7 +169,6 @@ __forceinline data_t nextIterator(Iterator* it)	// Важно обеспечит
 	#define stepIterator()	it->idx 	+= 1; \
 							it->remains -= 1; \
 							it->current += 1
-
 	data_t return_data;
 
 	if (it->itfunc)

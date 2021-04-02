@@ -38,6 +38,8 @@ const char* afterText = "Tranks for playing!\n"\
 
 #include "game.h"
 
+#include "map.h"	// temporal
+
 GLFWwindow* initScreen(uint width, uint height);
 void 		initOpenGL(void);
 void 		appClosure(void);
@@ -65,6 +67,17 @@ void dissectArgs(int argc, const char** argv)
 
 int main(int argc, const char** argv)
 {
+	Map* map = mapNew();
+
+	for (int i = 512; i--;)
+		mapAdd(map, rand()%128, malloc(1));
+
+	mapPrint(map);
+
+	printf("has %d ? %d\n", 6, mapHasKey(map, 6));
+
+	return 0;
+
 	dissectArgs(argc, argv);
 
 	#ifdef CLIENT_BUILD
