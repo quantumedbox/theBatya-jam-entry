@@ -69,14 +69,14 @@ int main(int argc, const char** argv)
 {
 	Map* map = mapNew();
 
-	for (int i = 512; i--;)
-		mapAdd(map, rand()%128, malloc(1));
+	for (int i = 1000000; i--;)
+	{
+		GameObj* obj = newGameObj();
+		mapAddByFunc(map, hashAddress, obj, ON_HEAP);
+		mapClear(map);
+	}
 
 	mapPrint(map);
-
-	printf("has %d ? %d\n", 6, mapHasKey(map, 6));
-
-	return 0;
 
 	dissectArgs(argc, argv);
 

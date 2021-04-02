@@ -5,10 +5,10 @@ layout(location = 1) in vec2 vTextureCoords;
 
 out vec2 fTextureCoords;
 
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-uniform float scale;
+uniform mat4 	model;
+uniform mat4 	view;
+uniform mat4 	projection;
+uniform float 	scale;
 
 void main()
 {

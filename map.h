@@ -5,7 +5,14 @@
 
 // Naive hashmap implementation
 
-#define MAP_STANDART_BUCKET_COUNT 32
+#define MAP_INIT_CAPACITY 	16		// always should be power of 2
+
+#define MAP_INIT_THRESHOLD 	0.75
+
+#define ON_HEAP 	0
+#define NOT_ON_HEAP 1
+#define SHARED_HEAP 2
+#define NO_MEM_FLAG 3
 
 // -------------------------------------------------------------- Type degfinitions -- //
 
@@ -23,6 +30,8 @@ typedef struct Bucket
 
 	void* 			data;
 
+	uint8_t			flag;
+
 	struct Bucket* 	next;
 }
 Bucket;
@@ -31,27 +40,76 @@ typedef struct
 {
 	Bucket* 		buckets;
 
-	size_t 			bucket_count;
+	// num of allocated buckets in memory
+	size_t 			capacity;
 
+	// percentage threshold that triggers resizing if len / capacity > threshold // should be normalized in (0, 1]
+	float 			threshold;
+
+	// item count
 	size_t 			len;
 }
 Map;
 
 // ------------------------------------------------------------ Function signatures -- //
 
-Map* 		mapNew			();
-void 		mapAdd 			(Map*, key_t key,  data_t data);
-void 		mapAddByFunc	(Map*, HashFunc_T, data_t data);
-void 		mapPrint 		(Map*);
-_Bool		mapHasKey		(Map*, key_t key);
-_Bool 		mapHasKeyByFunc	(Map*, HashFunc_T, data_t data);
+		Map* 	mapNew				();
+		void 	mapAdd 				(Map*, key_t key,  data_t data, uint8_t flag);
+		void 	mapAddByFunc		(Map*, HashFunc_T, data_t data, uint8_t flag);
+	   	_Bool	mapHasKey			(Map*, key_t key);
+	   	_Bool 	mapHasKeyByFunc		(Map*, HashFunc_T, data_t data);
+	   	void 	mapDelKey			(Map*, key_t key,  data_t data);
+	   	void 	mapDelKeyByFunc		(Map*, HashFunc_T, data_t data);
+	   	void 	mapClear			(Map*);
+		void 	mapPrint 			(Map*);
 
-static Bucket* 	_mapNewBucket	();
-static _Bool 	_mapHasKeyRecur	(Bucket*, key_t key);
+static 	Bucket* _mapNewBucket		();
+static  void 	_mapExtend			(Map*);
+static 	_Bool 	_mapHasKeyRecur		(Bucket*, key_t key);
+static 	void 	_mapAllocateBuckets	(Map*, 	 size_t n);
+static 	_Bool 	_mapAddRecur		(Bucket*, key_t key, data_t data, uint8_t flag);
+static 	void 	_mapPrintRecur		(Bucket*);
+static  void 	_mapExtend			(Map*);
+static  void 	_mapClearStack		(Bucket*);
 
-static void _mapAllocateBuckets	(Map* m, size_t n);
-static void _mapAddRecur		(Bucket* b, key_t key, data_t data);
-static void _mapPrintRecur		(Bucket* b);
+static  void 	_mapReallocateBucketStack	(Bucket* buckets, Bucket* stack, size_t cap);
+static  void 	_mapReallocateBucketRecur	(Bucket* stack,   Bucket* bucket);
+
+// ----------------------------------------------------------------- Hash functions -- //
+
+// TODO Generic macro for data types
+
+// Hash function that uses address of data to generate key
+// It should be used for allocated structs that are known for caller
+key_t hashAddress(data_t in)
+{
+	key_t key  = (key_t)in;
+
+	key  = (~key) + (key << 21);
+	key ^= key >> 24;
+	key  = (key + (key << 3)) + (key << 8);
+	key ^= key >> 14;
+	key  = (key + (key << 2)) + (key << 4);
+	key ^= key >> 28;
+	key += key << 31;
+
+	return key;
+}
+
+key_t hash64int(data_t in)
+{
+	key_t key  = *(int64_t*)in;
+
+	key  = (~key) + (key << 21);
+	key ^= key >> 24;
+	key  = (key + (key << 3)) + (key << 8);
+	key ^= key >> 14;
+	key  = (key + (key << 2)) + (key << 4);
+	key ^= key >> 28;
+	key += key << 31;
+
+	return key;
+}
 
 // ---------------------------------------------------------------------- Functions -- //
 
@@ -59,9 +117,10 @@ Map* mapNew()
 {
 	Map* new = (Map*)malloc(sizeof(Map));
 
-	_mapAllocateBuckets(new, MAP_STANDART_BUCKET_COUNT);
+	_mapAllocateBuckets(new, MAP_INIT_CAPACITY);
 
-	new->len = 0;
+	new->threshold 	= MAP_INIT_THRESHOLD;
+	new->len 		= 0;
 
 	return new;
 }
@@ -76,35 +135,42 @@ static inline Bucket* _mapNewBucket()
 static inline void _mapAllocateBuckets(Map* m, size_t n)
 {
 	m->buckets = (Bucket*)calloc(n, sizeof(Bucket));
-	m->bucket_count = n;
+	m->capacity = n;
 }
 
-void mapAdd(Map* m, key_t key, data_t data)
+void mapAdd(Map* m, key_t key, data_t data, uint8_t flag)
 {
-	uint32_t idx = key % m->bucket_count;
-
-	m->len += 1;
+	uint32_t idx = key % m->capacity;
 
 	if (m->buckets[idx].next == NULL)
 	{
+		m->len += 1;
+
 		Bucket* new = _mapNewBucket();
 		m->buckets[idx].next = new;
 		new->key 	= key;
 		new->data 	= data;
+		new->flag 	= flag;
 	}
-	else 
-		_mapAddRecur(m->buckets[idx].next, key, data);
+	else if (_mapAddRecur(m->buckets[idx].next, key, data, flag))
+		m->len += 1;
+
+	if (((float)m->len / m->capacity) >= m->threshold)
+		_mapExtend(m);
 }
 
-void mapAddByFunc(Map* m, HashFunc_T hashfunc, data_t data)
+void mapAddByFunc(Map* m, HashFunc_T hashfunc, data_t data, uint8_t flag)
 {
-	mapAdd(m, hashfunc(data), data);
+	mapAdd(m, hashfunc(data), data, flag);
 }
 
-static inline void _mapAddRecur(Bucket* b, key_t key, data_t data)
+// Returns true if new bucket was added to the stack
+static inline _Bool _mapAddRecur(Bucket* b, key_t key, data_t data, uint8_t flag)
 {
 	if (b->key == key) {
 		b->data = data;
+
+		return false;
 	}
 
 	else if (b->next == NULL)
@@ -113,16 +179,17 @@ static inline void _mapAddRecur(Bucket* b, key_t key, data_t data)
 		b->next 	= new;
 		new->key 	= key;
 		new->data 	= data;
+		new->flag 	= flag;
+
+		return true;
 	}
 
-	else {
-		_mapAddRecur(b->next, key, data);
-	}
+	return _mapAddRecur(b->next, key, data, flag);
 }
 
 _Bool mapHasKey(Map* m, key_t key)
 {
-	uint32_t idx = key % m->bucket_count;
+	uint32_t idx = key % m->capacity;
 
 	if (m->buckets[idx].next != NULL)
 		return _mapHasKeyRecur(m->buckets[idx].next, key);
@@ -146,13 +213,97 @@ static inline _Bool _mapHasKeyRecur(Bucket* b, key_t key)
 	return _mapHasKeyRecur(b->next, key);
 }
 
+// Create new bucket array and reallocate existing elems in it
+static void _mapExtend(Map* m)
+{
+	size_t old_capacity = m->capacity;
+
+	m->capacity = pow(2, log2(m->capacity)+1);
+
+	Bucket* new_array = (Bucket*)calloc(m->capacity, sizeof(Bucket));
+
+	for (int i = old_capacity; i--;)
+	{
+		if (m->buckets[i].next != NULL)
+			_mapReallocateBucketStack(new_array, m->buckets[i].next, m->capacity);
+	}
+
+	free(m->buckets);
+	m->buckets = new_array;
+}
+
+// Recursevly distribute all elements of bucket stack to the buckets array
+static void _mapReallocateBucketStack(Bucket* buckets, Bucket* stack, size_t cap)
+{
+	uint32_t idx = stack->key % cap;
+
+	Bucket* stack_next = stack->next;
+
+	if (buckets[idx].next == NULL) {
+		buckets[idx].next = stack;
+		stack->next = NULL;
+	}
+	else
+		_mapReallocateBucketRecur(buckets[idx].next, stack);
+
+	if (stack_next != NULL)
+		_mapReallocateBucketStack(buckets, stack_next, cap);
+}
+
+// Attach bucket argument to the last element of bucket stack
+static void _mapReallocateBucketRecur(Bucket* stack, Bucket* bucket)
+{
+	if (stack->next == NULL) {
+		stack->next = bucket;
+		bucket->next = NULL;
+	}
+	else
+		_mapReallocateBucketRecur(stack->next, bucket);
+}
+
+void mapDel(Map* m)
+{
+	mapClear(m);
+	free(m->buckets);
+	free(m);
+}
+
+// TODO Fix memory leak on clear
+
+void mapClear(Map* m)
+{
+	for (int i = m->capacity; i--;)
+	{
+		if (m->buckets[i].next != NULL) {
+			_mapClearStack(m->buckets[i].next);
+			m->buckets[i].next = NULL;
+		}
+	}
+
+	m->len = 0;
+
+	free(m->buckets);
+	_mapAllocateBuckets(m, MAP_INIT_CAPACITY);
+}
+
+static void _mapClearStack(Bucket* stack)
+{
+	if (stack->flag == ON_HEAP)
+		free(stack->data);
+
+	if (stack->next != NULL)
+		_mapClearStack(stack->next);
+
+	free(stack);
+}
+
 void mapPrint(Map* m)
 {
 	printf("hashmap object at %p\n", m);
-	printf("len: %llu, buckets count: %llu\n", m->len, m->bucket_count);
+	printf("len: %llu, threshold: %.2f, buckets count: %llu\n", m->len, m->threshold, m->capacity);
 	printf("-----------------------\n");
 
-	for (int i = m->bucket_count; i--;)
+	for (int i = m->capacity; i--;)
 	{
 		if (m->buckets[i].next != NULL) {
 			printf("---BUCKET %d\n", i);
@@ -161,9 +312,15 @@ void mapPrint(Map* m)
 	}
 }
 
+static char* _mapFlagDesriprions[] = {
+	"HEAP",
+	"NOT HEAP",
+	"SHARED HEAP"
+};
+
 static void _mapPrintRecur(Bucket* b)
 {
-	printf("(%p) key: %llu, data at: %p, next: %p\n", b, b->key, b->data, b->next);
+	printf("(%p) |%s| key: %llu, data at: %p, next: %p\n", b, _mapFlagDesriprions[b->flag], b->key, b->data, b->next);
 
 	if (b->next != NULL)
 		_mapPrintRecur(b->next);

@@ -19,7 +19,7 @@ typedef struct
     BYTE    SMBIOSMajorVersion;
     BYTE    SMBIOSMinorVersion;
     BYTE    DmiRevision;
-    DWORD   Length;
+   DWORD    Length;
     BYTE    SMBIOSTableData[];
 }
 RawSMBIOSData;

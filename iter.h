@@ -40,7 +40,6 @@
 #define SHARED_HEAP 2	// data should not be freed but it is in heap
 #define NO_MEM_FLAG 3	// sets after clearing
 
-
 // ----------------------------------------------------------------- Iterator usage -- //
 /*
 
@@ -61,7 +60,7 @@ typedef void* data_t;
 typedef struct IterElem
 {
 	data_t 				data;	// there should be never be NULL
-	_Bool				flag;	// may be ON_HEAP or NOT_ON_HEAP (reffering to data)
+	uint8_t				flag;	// may be ON_HEAP or NOT_ON_HEAP (reffering to data)
 }
 IterElem;	// ie
 
@@ -101,6 +100,7 @@ Iterator;	// it
 Iterable*	newIterLimited		(int32_t limit);
 Iterable*	newIterCaped		(int32_t cap);
 Iterable* 	newIter				();
+	void 	delIter 			(Iterable* i);
  	void 	setCapIter			(Iterable* i, uint32_t cap);
    _Bool 	addIter				(Iterable* i,	data_t data, _Bool flag);
   data_t 	popIter				(Iterable* i);						// stack-like pop from the top
@@ -224,6 +224,13 @@ __forceinline void setCapIter(Iterable* i, uint32_t cap)
 	i->cap 			= cap;
 }
 
+void delIter(Iterable* i)
+{
+	clearIter(i);
+	free(i->elems);
+	free(i);
+}
+
 // Returns false if operation wasn't successful
 _Bool addIter(Iterable* i, data_t data, _Bool flag)
 {
@@ -326,7 +333,7 @@ void clearIter(Iterable* i)
 	i->len = 0;
 }
 
-static char* flagDescription[] = {
+static char* _iterFlagDesriprions[] = {
 	"HEAP",
 	"NOT HEAP",
 	"SHARED HEAP",
@@ -344,7 +351,7 @@ void printIter(Iterable* i)
 		IterElem* cur_elem = i->elems;
 		for (register uint32_t remains = i->len; remains--;)
 		{
-			logf("(%d)%p |%s| data at %p\n", i->len - remains, cur_elem, flagDescription[cur_elem->flag], cur_elem->data);
+			logf("(%d)%p |%s| data at %p\n", i->len - remains, cur_elem, _iterFlagDesriprions[cur_elem->flag], cur_elem->data);
 
 			++cur_elem;
 		}

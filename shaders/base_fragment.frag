@@ -3,9 +3,10 @@
 out vec4 fColor;
 
 in vec2 fTextureCoords;
-uniform sampler2D bindedTexture;
-uniform vec2 subtextureCoords;
-uniform vec2 subtextureSize;
+
+uniform sampler2D 	bindedTexture;
+uniform vec2 		subtextureCoords;
+uniform vec2 		subtextureSize;
 
 void main()
 {
