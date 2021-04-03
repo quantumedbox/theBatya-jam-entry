@@ -25,6 +25,7 @@ typedef enum error {
 	THREAD_JOIN_ERR,
 	QUEUE_NO_FREE_PAGE_ERR,
 	RACING_COND_ERR,
+	MAP_NO_KEY_ERR,
 }
 Error_T;
 
@@ -44,7 +45,8 @@ char* ERRORTEXT[] = {
 	"cannot create a new thread\n",
 	"cannot join with a given thread\n",
 	"not a single available page to write\n",
-	"read and write between threads are set to the same page\nit will cause racing condition\n"
+	"read and write between threads are set to the same page\nit will cause racing condition\n",
+	"attempt to access non-existing key\n",
 };
 
 typedef enum warning {

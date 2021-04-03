@@ -23,6 +23,9 @@ typedef void* data_t;
 // Returns a key depending on the data
 typedef key_t(*HashFunc_T)(data_t in);
 
+// If set - on bucket deletion such func should be called upon data (if flag ON_HEAP is set)
+typedef void(*DelFunc_T)(void* in);
+
 // Stack-like structure that holds a key and void pointer to data
 typedef struct Bucket
 {
@@ -31,6 +34,8 @@ typedef struct Bucket
 	void* 			data;
 
 	uint8_t			flag;
+
+	DelFunc_T		delfunc;
 
 	struct Bucket* 	next;
 }
@@ -54,20 +59,24 @@ Map;
 // ------------------------------------------------------------ Function signatures -- //
 
 		Map* 	mapNew				();
-		void 	mapAdd 				(Map*, key_t key,  data_t data, uint8_t flag);
-		void 	mapAddByFunc		(Map*, HashFunc_T, data_t data, uint8_t flag);
+		void 	mapAdd 				(Map*, key_t key,  data_t, uint8_t flag);
+		void 	mapAddByFunc		(Map*, HashFunc_T, data_t, uint8_t flag);
 	   	_Bool	mapHasKey			(Map*, key_t key);
-	   	_Bool 	mapHasKeyByFunc		(Map*, HashFunc_T, data_t data);
-	   	void 	mapDelKey			(Map*, key_t key,  data_t data);
-	   	void 	mapDelKeyByFunc		(Map*, HashFunc_T, data_t data);
+	   	_Bool 	mapHasKeyByFunc		(Map*, HashFunc_T, data_t);
+	   	void 	mapDelKey			(Map*, key_t key,  data_t);
+	   	void 	mapDelKeyByFunc		(Map*, HashFunc_T, data_t);
+		void 	mapSetDelFunc		(Map*, key_t key,  DelFunc_T);
+		void 	mapSetDelFuncByFunc	(Map*, HashFunc_T, data_t, DelFunc_T);
 	   	void 	mapClear			(Map*);
 		void 	mapPrint 			(Map*);
 
 static 	Bucket* _mapNewBucket		();
 static  void 	_mapExtend			(Map*);
+static  Bucket* _mapGetBucket		(Map*,    key_t key);
+static  Bucket* _mapGetBucketRecur	(Bucket*, key_t key);
 static 	_Bool 	_mapHasKeyRecur		(Bucket*, key_t key);
 static 	void 	_mapAllocateBuckets	(Map*, 	 size_t n);
-static 	_Bool 	_mapAddRecur		(Bucket*, key_t key, data_t data, uint8_t flag);
+static 	_Bool 	_mapAddRecur		(Bucket*, key_t key, data_t, uint8_t flag);
 static 	void 	_mapPrintRecur		(Bucket*);
 static  void 	_mapExtend			(Map*);
 static  void 	_mapClearStack		(Bucket*);
@@ -162,6 +171,14 @@ void mapAdd(Map* m, key_t key, data_t data, uint8_t flag)
 void mapAddByFunc(Map* m, HashFunc_T hashfunc, data_t data, uint8_t flag)
 {
 	mapAdd(m, hashfunc(data), data, flag);
+}
+
+void mapAddByFuncHeap(Map* m, HashFunc_T hashfunc, data_t data, DelFunc_T delfunc)
+{
+	key_t hash = hashfunc(data);
+
+	mapAdd(m, hash, data, ON_HEAP);
+	mapSetDelFunc(m, hash, delfunc);
 }
 
 // Returns true if new bucket was added to the stack
@@ -282,19 +299,58 @@ void mapClear(Map* m)
 
 	m->len = 0;
 
-	free(m->buckets);
-	_mapAllocateBuckets(m, MAP_INIT_CAPACITY);
+	if (m->capacity > MAP_INIT_CAPACITY)
+	{
+		free(m->buckets);
+		_mapAllocateBuckets(m, MAP_INIT_CAPACITY);
+	}
 }
 
 static void _mapClearStack(Bucket* stack)
 {
-	if (stack->flag == ON_HEAP)
-		free(stack->data);
+	if (stack->flag == ON_HEAP) {
+		if (stack->delfunc)
+			stack->delfunc(stack->data);
+		else
+			free(stack->data);
+	}
 
 	if (stack->next != NULL)
 		_mapClearStack(stack->next);
 
 	free(stack);
+}
+
+void mapSetDelFunc(Map* m, key_t key, DelFunc_T delfunc)
+{
+	Bucket* target = _mapGetBucket(m, key);
+
+	target->delfunc = delfunc;
+}
+
+void mapSetDelFuncByFunc(Map* m, HashFunc_T hashfunc, data_t data, DelFunc_T delfunc)
+{
+	mapSetDelFunc(m, hashfunc(data), delfunc);
+}
+
+static Bucket* _mapGetBucket(Map* m, key_t key)
+{
+	uint32_t idx = key % m->capacity;
+
+	return _mapGetBucketRecur(m->buckets[idx].next, key);
+}
+
+static Bucket* _mapGetBucketRecur(Bucket* stack, key_t key)
+{
+	if (stack->key == key)
+		return stack;
+
+	else if (stack->next != NULL)
+		return _mapGetBucketRecur(stack->next, key);
+
+	else EXIT_ERROR(MAP_NO_KEY_ERR);
+
+	return NULL;
 }
 
 void mapPrint(Map* m)
@@ -320,7 +376,7 @@ static char* _mapFlagDesriprions[] = {
 
 static void _mapPrintRecur(Bucket* b)
 {
-	printf("(%p) |%s| key: %llu, data at: %p, next: %p\n", b, _mapFlagDesriprions[b->flag], b->key, b->data, b->next);
+	printf("(%p) |%s, %s| key: %llu, data at: %p, next: %p\n", b, _mapFlagDesriprions[b->flag], b->delfunc ? "+delfunc" : "", b->key, b->data, b->next);
 
 	if (b->next != NULL)
 		_mapPrintRecur(b->next);

@@ -10,11 +10,13 @@
 // #define RELEASE
 #ifdef DEBUG
 //#	define LOG_IN_FILE	// TODO define it to save all the log in the file rather than print on console
-#	define logf(fmt, ...) printf(fmt, __VA_ARGS__);	// TODO should be replaced with fprintf to stderr/stdout
+#	define logf(fmt, ...) 	fprintf(stderr, fmt, __VA_ARGS__)	// TODO should be replaced with fprintf to stderr/stdout
+#	define logln(text)		fprintf(stderr, text)
 #endif
 
 #ifdef RELEASE
-#	define logf //
+#	define logf 	//
+#	define logln 	//
 #	define STRICT_RUNTIME	// don't ignore any errors
 #endif
 
@@ -37,7 +39,7 @@ const char* afterText = "Tranks for playing!\n"\
 #endif
 
 #include "game.h"
-
+#include "voiddelfunc.h"
 #include "map.h"	// temporal
 
 GLFWwindow* initScreen(uint width, uint height);
@@ -69,10 +71,10 @@ int main(int argc, const char** argv)
 {
 	Map* map = mapNew();
 
-	for (int i = 1000000; i--;)
+	for (int i = 10000000; i--;)
 	{
 		GameObj* obj = newGameObj();
-		mapAddByFunc(map, hashAddress, obj, ON_HEAP);
+		mapAddByFuncHeap(map, hashAddress, obj, delGameObjVoid);
 		mapClear(map);
 	}
 
