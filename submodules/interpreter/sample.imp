@@ -1,0 +1,35 @@
+1+2
+
+3-2
+
+# intern method
+_func:
+	if a := 1, a == 1:
+		return true
+	return false
+
+# extern method
+.Process:
+	test := Cls.New()
+
+	test.Prop = 2
+	io.Print(test.Prop)
+
+	return func()
+
+<Cls:
+	.Slots:
+		@Dict := {}
+		@List := []
+
+		@data := 0	# shadowed for everything
+
+	.New(arg1, arg2):
+		@dict = arg1
+		@list = arg2
+
+	@Prop:
+		.Set(arg):
+			@data = arg
+		.Get:
+			return @data

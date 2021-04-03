@@ -1,0 +1,88 @@
+# Content interpreter for player-driven game logic
+
+# >_.< imp content lang
+
+# name of the file = name of the module
+# each module is strictly a single file
+
+# each symbol should serve one and only one purpose
+
+import io
+import rand
+import limits  # there are certain memory and cpu limitations that are set by server
+
+# imports should be before everything else
+
+.Clicked:	   # in methods - any number of arguments could be dropped (unless they are used)
+.Clicked(mouse_button):
+.Clicked(_, playerID):	# or like so to positional args
+
+import process # imports could define methods upon the file class itself
+
+# entry method of binded game object
+# each file is an object too which could be called from outside
+# @ could be used as macro for 'self.'
+.Process:
+	if @type == process.GameObj && @test:
+		@frame = rand.Range(0, @frameCount)
+
+.New(arg):
+	io.Print('new instance of a inter.imp')
+
+# internal function that is known only for this object
+_func(arg):
+	if type(arg, Type):
+		arg = type.New() # new instance should be called like method of type
+
+	arg += 1
+	return arg
+
+# class declaration
+>type:
+	.New:
+		@value = 4		  # declaration of new names should be visibly be such
+	.Del:
+		io.Print(self.ID) # extern calls should always be explicit
+	.Test:
+		if self.Has('val'): io.Print('test')
+
+	# attr interface
+	@value:				  # lower-case names are prohibited for use from import
+		.Set(value):
+			@data = value
+		.Get:
+			return @data
+
+# external class that lands itself on importing module
+<Extern:
+	.New:
+		io.Print('test')
+
+_iterate(arg):
+	if iter(arg):
+		for _, value := range arg:	# go-style range iteration
+			io.Print(value)
+
+built-in types:
+	- nil
+	- bool		# Not a masket int as in python, but a separate type
+	- string	# Unicode string, that stores its length
+	- int
+	- list
+	- dict
+
+{a, d} or dict.New(a, d)
+[a, d] or list.New(a, d)
+'strin'g'		# Strings defined strictly by '' and could contain other ' symbols within
+
+if i.Func(), i.IsTrue():	# go-style initialization statements
+	io.Party()
+
+
+>type:
+	.Dict:	# values should be declared staticly
+		@value := value.new()
+		@test := bool.New()
+
+	.New(arg):
+		@value = arg
