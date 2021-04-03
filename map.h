@@ -63,7 +63,7 @@ Map;
 		void 	mapAddByFunc		(Map*, HashFunc_T, data_t, uint8_t flag);
 	   	_Bool	mapHasKey			(Map*, key_t key);
 	   	_Bool 	mapHasKeyByFunc		(Map*, HashFunc_T, data_t);
-	   	void 	mapDelKey			(Map*, key_t key,  data_t);
+	   	void 	mapDelKey			(Map*, key_t key);
 	   	void 	mapDelKeyByFunc		(Map*, HashFunc_T, data_t);
 		void 	mapSetDelFunc		(Map*, key_t key,  DelFunc_T);
 		void 	mapSetDelFuncByFunc	(Map*, HashFunc_T, data_t, DelFunc_T);
@@ -168,12 +168,12 @@ void mapAdd(Map* m, key_t key, data_t data, uint8_t flag)
 		_mapExtend(m);
 }
 
-void mapAddByFunc(Map* m, HashFunc_T hashfunc, data_t data, uint8_t flag)
+__forceinline void mapAddByFunc(Map* m, HashFunc_T hashfunc, data_t data, uint8_t flag)
 {
 	mapAdd(m, hashfunc(data), data, flag);
 }
 
-void mapAddByFuncHeap(Map* m, HashFunc_T hashfunc, data_t data, DelFunc_T delfunc)
+__forceinline void mapAddByFuncHeap(Map* m, HashFunc_T hashfunc, data_t data, DelFunc_T delfunc)
 {
 	key_t hash = hashfunc(data);
 
@@ -204,6 +204,16 @@ static inline _Bool _mapAddRecur(Bucket* b, key_t key, data_t data, uint8_t flag
 	return _mapAddRecur(b->next, key, data, flag);
 }
 
+void mapDelKey(Map* m, key_t key)
+{
+	// TODO
+}
+
+__forceinline void mapDelKeyByFunc(Map* m, HashFunc_T hashfunc, data_t data)
+{
+	mapDelKey(m, hashfunc(data));
+}
+
 _Bool mapHasKey(Map* m, key_t key)
 {
 	uint32_t idx = key % m->capacity;
@@ -214,7 +224,7 @@ _Bool mapHasKey(Map* m, key_t key)
 		return false;
 }
 
-_Bool mapHasKeyByFunc(Map* m, HashFunc_T hashfunc, data_t data)
+__forceinline _Bool mapHasKeyByFunc(Map* m, HashFunc_T hashfunc, data_t data)
 {
 	return mapHasKey(m, hashfunc(data));
 }
@@ -328,7 +338,7 @@ void mapSetDelFunc(Map* m, key_t key, DelFunc_T delfunc)
 	target->delfunc = delfunc;
 }
 
-void mapSetDelFuncByFunc(Map* m, HashFunc_T hashfunc, data_t data, DelFunc_T delfunc)
+__forceinline void mapSetDelFuncByFunc(Map* m, HashFunc_T hashfunc, data_t data, DelFunc_T delfunc)
 {
 	mapSetDelFunc(m, hashfunc(data), delfunc);
 }
