@@ -1,6 +1,8 @@
 #pragma once
 
 #include "networking.h"
+
+#include "../../elapsed_time.h"
 #include "../../errors.h"
 
 #define MAX_REGISTRATION_REQUESTS 10	// how many reg packets will be send before giving up

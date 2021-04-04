@@ -12,12 +12,12 @@
 //#	define LOG_IN_FILE	// TODO define it to save all the log in the file rather than print on console
 #	define logf(fmt, ...) 	fprintf(stderr, fmt, __VA_ARGS__)	// TODO should be replaced with fprintf to stderr/stdout
 #	define logln(text)		fprintf(stderr, text)
+#	define STRICT_RUNTIME	// don't ignore any errors
 #endif
 
 #ifdef RELEASE
-#	define logf 	//
-#	define logln 	//
-#	define STRICT_RUNTIME	// don't ignore any errors
+#	define logf(...) 	//
+#	define logln(...)	//
 #endif
 
 const char* afterText = "Tranks for playing!\n"\
@@ -32,6 +32,8 @@ const char* afterText = "Tranks for playing!\n"\
 #include "submodules/networking/networking.h"
 #include "submodules/networking/client.h"
 #include "submodules/networking/server.h"
+
+#include "elapsed_time.h"
 
 #ifdef CLIENT_BUILD	// Server build should not include all the graphical fluff
 #	define IMPLEMENT_GRAPHICS
@@ -71,12 +73,16 @@ int main(int argc, const char** argv)
 {
 	Map* map = mapNew();
 
-	for (int i = 10000000; i--;)
+	getProfileTime();
+	for (int i = 1000000; i--;)
 	{
 		GameObj* obj = newGameObj();
-		mapAddByFuncHeap(map, hashAddress, obj, delGameObjVoid);
-		mapClear(map);
+		mapAddByFuncHeap(map, hashAddress, obj, delGameObj);
+		// mapClear(map);
 	}
+	mapClear(map);
+
+	printProfileTime("iter score");
 
 	mapPrint(map);
 

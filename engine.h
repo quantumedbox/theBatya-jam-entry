@@ -33,7 +33,7 @@ void initEngine(Engine* engine, uint width, uint height)
 __forceinline Scene* newScene()
 {
 	Scene* new = (Scene*)malloc(sizeof(Scene));
-	new->objs = newIter();
+	new->objs = iterNew();
 	new->position[0] = new->position[1] = new->position[2] = 0;
 	return new;
 }
@@ -57,7 +57,7 @@ SceneObj* addSceneObj(Scene* scene, SceneObjType type)
 	}
 
 	// logf("adding scene_obj at %p to scene %p\n", new, scene->objs);
-	addIter(scene->objs, new, ON_HEAP);
+	iterAdd(scene->objs, new, ON_HEAP);
 
 	return new;
 }

@@ -2,6 +2,7 @@
 
 #include <sys/time.h>
 #include <inttypes.h>
+#include <windows.h>
 
 uint64_t timeDelta;
 uint64_t curTime;
@@ -27,4 +28,32 @@ void updateFrameTime(void)
 double getFrameTime(void)
 {
 	return (double)getSeconds() - prevFrameTime;
+}
+
+/*
+*	@brief returns processor time that elapsed between getProfileTime() calls
+*/
+
+double getProfileTime()
+{
+	static double prevTime = 0; 
+
+    LARGE_INTEGER t, f;
+    QueryPerformanceCounter(&t);
+    QueryPerformanceFrequency(&f);
+
+    double time = (double)t.QuadPart/(double)f.QuadPart;
+    double rtrn = time - prevTime;
+    prevTime = time;
+
+    return rtrn;
+}
+
+/*
+*	@brief prints the getProfileTime() result with given description text to stdout
+*/
+
+void printProfileTime(char* description)
+{
+	fprintf(stdout, "%s: %lf\n", description, getProfileTime());
 }

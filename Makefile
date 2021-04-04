@@ -1,5 +1,6 @@
+# for now is only GCC compilation
 CC = gcc
-CFLAGS = -x c -std=c11 -Wall
+CFLAGS = -x c -std=c11 -Wall -fopenmp
 
 COMMON_DEPENDENCIES = -lopengl32 -lglfw3 -lgdi32 -lfreetype -lws2_32 -l:glew32.dll
 

@@ -29,13 +29,13 @@ void keyLayout_bindNewKey(KeyLayout* layout, int key, int action, int type)
 	bind->key = key;
 	bind->action = action;
 	bind->type = type;
-	addIter(layout->keyBindings, (void*)bind, ON_HEAP);
+	iterAdd(layout->keyBindings, (void*)bind, ON_HEAP);
 }
 
 KeyLayout* keyLayout_new(void)
 {
 	KeyLayout* new = (KeyLayout*)malloc(sizeof(KeyLayout));
-	new->keyBindings = newIter();
+	new->keyBindings = iterNew();
 	return new;
 }
 

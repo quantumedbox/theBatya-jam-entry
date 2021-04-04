@@ -3,6 +3,7 @@
 #include "networking.h"
 #include "queue-thread.h"
 
+#include "../../elapsed_time.h"
 #include "../../errors.h"
 #include "../../iter.h"
 
@@ -53,8 +54,8 @@ ServerAPI* newServerAPI()
 	new->max_connections = DEFAULT_MAX_CONNECTIONS;
 	new->listening_sock	 = newUDPSocket();
 	new->answering_sock	 = newUDPSocket();
-	new->tunnels 		 = newIter();
-	new->registry 		 = newIter();
+	new->tunnels 		 = iterNew();
+	new->registry 		 = iterNew();
 
 	return new;
 }

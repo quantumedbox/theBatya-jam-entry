@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #ifndef DEFAULT_MAX_ITER_LEN
 #define DEFAULT_MAX_ITER_LEN -1	// Negative == unlimited
@@ -56,11 +57,17 @@
 
 typedef void* data_t;
 
+typedef uint8_t flag_t;
+
+// If set - on bucket deletion such func should be called upon data (if flag ON_HEAP is set)
+typedef void(*DelFunc_T)(void* in);
+
 // Stack chain of void* data
 typedef struct IterElem
 {
 	data_t 				data;	// there should be never be NULL
-	uint8_t				flag;	// may be ON_HEAP or NOT_ON_HEAP (reffering to data)
+	flag_t				flag;	// may be ON_HEAP or NOT_ON_HEAP (reffering to data)
+	DelFunc_T			delfunc;
 }
 IterElem;	// ie
 
@@ -97,32 +104,38 @@ Iterator;	// it
 
 // TODO Maybe we should rethink the naming conventions of this module ?
 
-Iterable*	newIterLimited		(int32_t limit);
-Iterable*	newIterCaped		(int32_t cap);
-Iterable* 	newIter				();
-	void 	delIter 			(Iterable* i);
- 	void 	setCapIter			(Iterable* i, uint32_t cap);
-   _Bool 	addIter				(Iterable* i,	data_t data, _Bool flag);
-  data_t 	popIter				(Iterable* i);						// stack-like pop from the top
-  data_t 	pullIter			(Iterable* i);						// stack-like pop from the beginning
-  data_t 	indexIter 			(Iterable* i,  int32_t nidx);		// list-like indexed retrieval
-	void 	delIndexIter		(Iterable* i,  int32_t nidx);
-	void 	clearIter 			(Iterable* i);
-	void 	printIter 			(Iterable* i);
+// for every object on heap should be declared a void* del function with the VOID_ prefix
+#define iterAddHeap(i, data, delfunc) \
+	   _iterAddHeap(i, data, VOID_##delfunc)
+
+Iterable*	iterNewLimited		(int32_t limit);
+Iterable*	iterNewCaped		(int32_t cap);
+Iterable* 	iterNew				();
+	void 	iterDel 			(Iterable* i);
+ 	void 	iterSetCap			(Iterable* i, uint32_t cap);
+    bool 	iterAdd				(Iterable* i, data_t, flag_t);
+  data_t 	iterPop				(Iterable* i);						// stack-like pop from the top
+  data_t 	iterPull			(Iterable* i);						// stack-like pop from the beginning
+  data_t 	iterIndex 			(Iterable* i, int32_t nidx);		// list-like indexed retrieval
+	void 	iterDelIndex		(Iterable* i, int32_t nidx);
+	void 	iterClear 			(Iterable* i);
+	void 	iterPrint 			(Iterable* i);
 
 // Iteration functions
 Iterator* 	getIterator			(Iterable* i);						// get iterator from iterable
   data_t 	nextIterator		(Iterator* it);						// main iteration function for both functional and linear types
-    void 	setIteratorFunc 	(Iterator* it, IterFunction_T f);
-	void 	setIteratorMapFunc	(Iterator* it, IterMapFunction_T f);
+    void 	setIteratorFunc 	(Iterator* it, IterFunction_T);
+	void 	setIteratorMapFunc	(Iterator* it, IterMapFunction_T);
     void* 	stopIterator		(Iterator* it);
 
-// Internal realisation
-static void _delElem			(Iterable* i, uint32_t idx, _Bool to_free);
+// Internal
+	   bool _iterAddHeap		(Iterable* i, data_t, DelFunc_T);
+static void _delElem			(Iterable* i, uint32_t idx, bool to_free);
 
 // ---------------------------------------------------------------------- Functions -- //
 
-Iterable* newIter()	// New iterable
+
+Iterable* iterNew()	// New iterable
 {
 	Iterable* new = malloc_type(Iterable);
 	new->elems 		= malloc_zero(IterElem);
@@ -133,18 +146,18 @@ Iterable* newIter()	// New iterable
 	return new;
 }
 
-__forceinline Iterable* newIterLimited(int32_t limit)
+__forceinline Iterable* iterNewLimited(int32_t limit)
 {
-	Iterable* new = newIter();
+	Iterable* new = iterNew();
 	new->limit = limit;
 
 	return new;
 }
 
-__forceinline Iterable* newIterCaped(int32_t cap)
+__forceinline Iterable* iterNewCaped(int32_t cap)
 {
-	Iterable* new = newIter();
-	setCapIter(new, cap);
+	Iterable* new = iterNew();
+	iterSetCap(new, cap);
 
 	return new;
 }
@@ -216,7 +229,7 @@ __forceinline void* stopIterator(Iterator* it)
 }
 
 // if current len is greater than new cap -> all items at the end that didn't fit will be discarded and new len will be equal to cap
-__forceinline void setCapIter(Iterable* i, uint32_t cap)
+__forceinline void iterSetCap(Iterable* i, uint32_t cap)
 {
 	i->elems 		= realloc_type(i->elems, IterElem, cap);
 	if (i->len > cap)
@@ -224,33 +237,42 @@ __forceinline void setCapIter(Iterable* i, uint32_t cap)
 	i->cap 			= cap;
 }
 
-void delIter(Iterable* i)
+void iterDel(Iterable* i)
 {
-	clearIter(i);
+	iterClear(i);
 	free(i->elems);
 	free(i);
 }
 
 // Returns false if operation wasn't successful
-_Bool addIter(Iterable* i, data_t data, _Bool flag)
+bool iterAdd(Iterable* i, data_t data, flag_t flag)
 {
 	if (i->limit > 0 && i->len + 1 > i->limit)
 		return false;
 
 	if (i->cap < i->len + 1)
-		setCapIter(i, i->cap+1);
+		iterSetCap(i, i->cap+1);
 
 	IterElem* elem = &(i->elems[i->len]);
 	elem->data = data;
 	elem->flag = flag;
+	elem->delfunc = NULL;
 
 	i->len += 1;
 	return true;
 }
 
+__forceinline bool _iterAddHeap(Iterable* i, data_t data, DelFunc_T delfunc)
+{
+	bool success = iterAdd(i, data, ON_HEAP);
+	if (success)
+		i->elems[i->len].delfunc = delfunc;
+	return success;
+}
+
 // Pop the last element from Iter
 // WARNING! free() on data should be called manually
-data_t popIter(Iterable* i)
+data_t iterPop(Iterable* i)
 {
 	if (i->len == 0)
 		return NULL;
@@ -262,7 +284,7 @@ data_t popIter(Iterable* i)
 
 // Pull the first element from Iter
 // WARNING! free() on data should be called manually
-data_t pullIter(Iterable* i)
+data_t iterPull(Iterable* i)
 {
 	if (i->len == 0)
 		return NULL;
@@ -281,16 +303,21 @@ static inline void _shiftElems(Iterable* i, uint32_t idx)
 	{
 		prev_elem->data = cur_elem->data;
 		prev_elem->flag = cur_elem->flag;
+		prev_elem->delfunc = cur_elem->delfunc;
 
 		++prev_elem; 	++cur_elem;
 	}
 }
 
-static inline void _delElem(Iterable* i, uint32_t idx, _Bool to_free)
+static inline void _delElem(Iterable* i, uint32_t idx, bool to_free)
 {
 	IterElem* elem = &(i->elems[idx]);
-	if (to_free && elem->flag == ON_HEAP) {
-		free(elem->data);
+	if (to_free && elem->flag == ON_HEAP)
+	{
+		if (elem->delfunc)
+			elem->delfunc(elem->data);
+		else
+			free(elem->data);
 	}
 	if (idx != i->len-1) {
 		_shiftElems(i, idx);
@@ -307,25 +334,31 @@ static inline int32_t _negateIndex(Iterable* i, int32_t nidx)
 	return nidx;
 }
 
-void delIndexIter(Iterable* i, int32_t nidx)
+void iterDelIndex(Iterable* i, int32_t nidx)
 {
 	_delElem(i, _negateIndex(i, nidx), true);
 }
 
-data_t indexIter(Iterable* i, int32_t nidx)
+data_t iterIndex(Iterable* i, int32_t nidx)
 {
 	return i->elems[_negateIndex(i, nidx)].data;
 }
 
-void clearIter(Iterable* i)
+void iterClear(Iterable* i)
 {
 	IterElem* cur_elem = &(i->elems[i->len-1]);
 	for (register uint32_t remains = i->len; remains--;)
 	{
 		if (cur_elem->flag == ON_HEAP)
-			free(cur_elem->data);
+		{
+			if (cur_elem->delfunc)
+				cur_elem->delfunc(cur_elem->data);
+			else
+				free(cur_elem->data);
+		}
 		cur_elem->data = NULL;
 		cur_elem->flag = NO_MEM_FLAG;
+		cur_elem->delfunc = NULL;
 
 		--cur_elem;
 	}
@@ -341,17 +374,24 @@ static char* _iterFlagDesriprions[] = {
 };
 
 // Print data addresses
-void printIter(Iterable* i)
+void iterPrint(Iterable* i)
 {
-	printf("Iteable at %p\n", i);
-	printf("len: %d, cap: %d, limit: %d\n", i->len, i->cap, i->limit);
-	printf("---------------------------\n");
+	fprintf(stdout, "Iteable at %p\n", i);
+	fprintf(stdout, "len: %d, cap: %d, limit: %d\n", i->len, i->cap, i->limit);
+	fprintf(stdout, "---------------------------\n");
 	if (i->len > 0)
 	{
 		IterElem* cur_elem = i->elems;
 		for (register uint32_t remains = i->len; remains--;)
 		{
-			logf("(%d)%p |%s| data at %p\n", i->len - remains, cur_elem, _iterFlagDesriprions[cur_elem->flag], cur_elem->data);
+			fprintf(
+				stdout, "(%d)%p |%s%s| data at %p\n",
+				i->len - remains,
+				cur_elem,
+				_iterFlagDesriprions[cur_elem->flag],
+				cur_elem->delfunc ? "+DF" : "",
+				cur_elem->data
+			);
 
 			++cur_elem;
 		}

@@ -20,6 +20,8 @@ typedef uint64_t key_t;
 
 typedef void* data_t;
 
+typedef uint8_t flag_t;
+
 // Returns a key depending on the data
 typedef key_t(*HashFunc_T)(data_t in);
 
@@ -58,6 +60,10 @@ Map;
 
 // ------------------------------------------------------------ Function signatures -- //
 
+// for every hashing object on heap should be declared void* del function with the VOID_ prefix
+#define mapAddByFuncHeap(m, hashfunc, data, delfunc) \
+	   _mapAddByFuncHeap(m, hashfunc, data, VOID_##delfunc)
+
 		Map* 	mapNew				();
 		void 	mapAdd 				(Map*, key_t key,  data_t, uint8_t flag);
 		void 	mapAddByFunc		(Map*, HashFunc_T, data_t, uint8_t flag);
@@ -69,6 +75,8 @@ Map;
 		void 	mapSetDelFuncByFunc	(Map*, HashFunc_T, data_t, DelFunc_T);
 	   	void 	mapClear			(Map*);
 		void 	mapPrint 			(Map*);
+
+ 		void 	_mapAddByFuncHeap	(Map*, HashFunc_T, data_t, DelFunc_T);
 
 static 	Bucket* _mapNewBucket		();
 static  void 	_mapExtend			(Map*);
@@ -122,6 +130,7 @@ key_t hash64int(data_t in)
 
 // ---------------------------------------------------------------------- Functions -- //
 
+
 Map* mapNew()
 {
 	Map* new = (Map*)malloc(sizeof(Map));
@@ -134,6 +143,7 @@ Map* mapNew()
 	return new;
 }
 
+
 static inline Bucket* _mapNewBucket()
 {
 	Bucket* new = (Bucket*)calloc(1, sizeof(Bucket));
@@ -141,11 +151,13 @@ static inline Bucket* _mapNewBucket()
 	return new;
 }
 
+
 static inline void _mapAllocateBuckets(Map* m, size_t n)
 {
 	m->buckets = (Bucket*)calloc(n, sizeof(Bucket));
 	m->capacity = n;
 }
+
 
 void mapAdd(Map* m, key_t key, data_t data, uint8_t flag)
 {
@@ -168,18 +180,21 @@ void mapAdd(Map* m, key_t key, data_t data, uint8_t flag)
 		_mapExtend(m);
 }
 
+
 __forceinline void mapAddByFunc(Map* m, HashFunc_T hashfunc, data_t data, uint8_t flag)
 {
 	mapAdd(m, hashfunc(data), data, flag);
 }
 
-__forceinline void mapAddByFuncHeap(Map* m, HashFunc_T hashfunc, data_t data, DelFunc_T delfunc)
+
+__forceinline void _mapAddByFuncHeap(Map* m, HashFunc_T hashfunc, data_t data, DelFunc_T delfunc)
 {
 	key_t hash = hashfunc(data);
 
 	mapAdd(m, hash, data, ON_HEAP);
 	mapSetDelFunc(m, hash, delfunc);
 }
+
 
 // Returns true if new bucket was added to the stack
 static inline _Bool _mapAddRecur(Bucket* b, key_t key, data_t data, uint8_t flag)
@@ -204,15 +219,18 @@ static inline _Bool _mapAddRecur(Bucket* b, key_t key, data_t data, uint8_t flag
 	return _mapAddRecur(b->next, key, data, flag);
 }
 
+
 void mapDelKey(Map* m, key_t key)
 {
 	// TODO
 }
 
+
 __forceinline void mapDelKeyByFunc(Map* m, HashFunc_T hashfunc, data_t data)
 {
 	mapDelKey(m, hashfunc(data));
 }
+
 
 _Bool mapHasKey(Map* m, key_t key)
 {
@@ -223,6 +241,7 @@ _Bool mapHasKey(Map* m, key_t key)
 	else
 		return false;
 }
+
 
 __forceinline _Bool mapHasKeyByFunc(Map* m, HashFunc_T hashfunc, data_t data)
 {
@@ -240,6 +259,7 @@ static inline _Bool _mapHasKeyRecur(Bucket* b, key_t key)
 	return _mapHasKeyRecur(b->next, key);
 }
 
+
 // Create new bucket array and reallocate existing elems in it
 static void _mapExtend(Map* m)
 {
@@ -249,7 +269,8 @@ static void _mapExtend(Map* m)
 
 	Bucket* new_array = (Bucket*)calloc(m->capacity, sizeof(Bucket));
 
-	for (int i = old_capacity; i--;)
+	#pragma omp parallel for
+	for (register int i = 0; i < old_capacity; i++)
 	{
 		if (m->buckets[i].next != NULL)
 			_mapReallocateBucketStack(new_array, m->buckets[i].next, m->capacity);
@@ -258,6 +279,7 @@ static void _mapExtend(Map* m)
 	free(m->buckets);
 	m->buckets = new_array;
 }
+
 
 // Recursevly distribute all elements of bucket stack to the buckets array
 static void _mapReallocateBucketStack(Bucket* buckets, Bucket* stack, size_t cap)
@@ -277,6 +299,7 @@ static void _mapReallocateBucketStack(Bucket* buckets, Bucket* stack, size_t cap
 		_mapReallocateBucketStack(buckets, stack_next, cap);
 }
 
+
 // Attach bucket argument to the last element of bucket stack
 static void _mapReallocateBucketRecur(Bucket* stack, Bucket* bucket)
 {
@@ -288,6 +311,7 @@ static void _mapReallocateBucketRecur(Bucket* stack, Bucket* bucket)
 		_mapReallocateBucketRecur(stack->next, bucket);
 }
 
+
 void mapDel(Map* m)
 {
 	mapClear(m);
@@ -295,11 +319,11 @@ void mapDel(Map* m)
 	free(m);
 }
 
-// TODO Fix memory leak on clear
 
 void mapClear(Map* m)
 {
-	for (int i = m->capacity; i--;)
+	#pragma omp parallel for
+	for (register int i = 0; i < m->capacity; i++)
 	{
 		if (m->buckets[i].next != NULL) {
 			_mapClearStack(m->buckets[i].next);
@@ -316,6 +340,7 @@ void mapClear(Map* m)
 	}
 }
 
+
 static void _mapClearStack(Bucket* stack)
 {
 	if (stack->flag == ON_HEAP) {
@@ -331,6 +356,7 @@ static void _mapClearStack(Bucket* stack)
 	free(stack);
 }
 
+
 void mapSetDelFunc(Map* m, key_t key, DelFunc_T delfunc)
 {
 	Bucket* target = _mapGetBucket(m, key);
@@ -338,10 +364,12 @@ void mapSetDelFunc(Map* m, key_t key, DelFunc_T delfunc)
 	target->delfunc = delfunc;
 }
 
+
 __forceinline void mapSetDelFuncByFunc(Map* m, HashFunc_T hashfunc, data_t data, DelFunc_T delfunc)
 {
 	mapSetDelFunc(m, hashfunc(data), delfunc);
 }
+
 
 static Bucket* _mapGetBucket(Map* m, key_t key)
 {
@@ -349,6 +377,7 @@ static Bucket* _mapGetBucket(Map* m, key_t key)
 
 	return _mapGetBucketRecur(m->buckets[idx].next, key);
 }
+
 
 static Bucket* _mapGetBucketRecur(Bucket* stack, key_t key)
 {
@@ -363,20 +392,22 @@ static Bucket* _mapGetBucketRecur(Bucket* stack, key_t key)
 	return NULL;
 }
 
+
 void mapPrint(Map* m)
 {
-	printf("hashmap object at %p\n", m);
-	printf("len: %llu, threshold: %.2f, buckets count: %llu\n", m->len, m->threshold, m->capacity);
-	printf("-----------------------\n");
+	fprintf(stdout, "hashmap object at %p\n", m);
+	fprintf(stdout, "len: %llu, threshold: %.2f, buckets count: %llu\n", m->len, m->threshold, m->capacity);
+	fprintf(stdout, "-----------------------\n");
 
 	for (int i = m->capacity; i--;)
 	{
 		if (m->buckets[i].next != NULL) {
-			printf("---BUCKET %d\n", i);
+			fprintf(stdout, "---BUCKET %d\n", i);
 			_mapPrintRecur(m->buckets[i].next);
 		}
 	}
 }
+
 
 static char* _mapFlagDesriprions[] = {
 	"HEAP",
@@ -384,9 +415,18 @@ static char* _mapFlagDesriprions[] = {
 	"SHARED HEAP"
 };
 
+
 static void _mapPrintRecur(Bucket* b)
 {
-	printf("(%p) |%s, %s| key: %llu, data at: %p, next: %p\n", b, _mapFlagDesriprions[b->flag], b->delfunc ? "+delfunc" : "", b->key, b->data, b->next);
+	fprintf(
+		stdout, "(%p) |%s%s| key: %llu, data at: %p, next: %p\n",
+		b,
+		_mapFlagDesriprions[b->flag],
+		b->delfunc ? "+DF" : "",
+		b->key,
+		b->data,
+		b->next
+	);
 
 	if (b->next != NULL)
 		_mapPrintRecur(b->next);

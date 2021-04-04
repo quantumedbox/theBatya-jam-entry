@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include "typedef.h"
+#include "engine_types.h"
 #include "graphics.h"
 #include "camera.h"
 #include "engine.h"

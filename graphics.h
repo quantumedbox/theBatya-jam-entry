@@ -1,6 +1,7 @@
 #pragma once
 
 #include "typedef.h"
+#include "engine_types.h"
 #include "rendering_pipeline.h"
 #include "camera.h"
 #include "texture_load.h"
