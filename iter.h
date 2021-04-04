@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+// #include <pthread.h>
+
+// fix mutex blocking and print all such errors in the future
 
 #ifndef DEFAULT_MAX_ITER_LEN
 #define DEFAULT_MAX_ITER_LEN -1	// Negative == unlimited
@@ -13,7 +16,7 @@
 #define SECURE_ITER_LIMIT 	0xFFFF // 65535
 
 // TODO Блокирование изменений после начала итерации
-// TODO Mulex lock
+// TODO -- IN PROCESS -- Mulex lock
 // TODO Забота о data alignment
 // TODO Предупреждение о перезаполнении
 // TODO Функция сортировки для подготовки к итерациям зависимых от друг друга (например, рендер и байндинг шейдеров)
@@ -26,7 +29,7 @@
 
 #define next_iteration_of_type(iter, type) (type*)nextIterator(iter)
 
-#define check_stop_iteration(obj) if (obj == ITERATION_STOP) break;
+#define check_stop_iteration(it, obj) if (obj == ITERATION_STOP) break;
 
 // makes sure that such loop will not be infinite
 #ifdef SECURE_ITERATION
@@ -48,12 +51,13 @@
 	while_iter(it)
 	{
 		Type* obj = next_iteration_of_type(it, Type);
-		check_stop_iteration(obj);
+		check_stop_iteration(it, obj);
 		...
 	}
 
 */
 // --------------------------------------------------------------- Type definitions -- //
+
 
 typedef void* data_t;
 
@@ -66,7 +70,7 @@ typedef void(*DelFunc_T)(void* in);
 typedef struct IterElem
 {
 	data_t 				data;	// there should be never be NULL
-	flag_t				flag;	// may be ON_HEAP or NOT_ON_HEAP (reffering to data)
+	flag_t				flag;	// may be ON_HEAP or NOT_ON_HEAP (referring to data)
 	DelFunc_T			delfunc;
 }
 IterElem;	// ie
@@ -80,6 +84,7 @@ typedef struct
 	int32_t 			cap;	// allocated slots
 	int32_t 			limit;	// if necessary, you can set a limit on the max amount of elements
 								// negative value means that there's no limit (which could be dangerous)
+	// pthread_mutex_t 	lock;	// mutex lock for thread safety
 }
 Iterable;	// i
 
@@ -101,8 +106,6 @@ typedef struct
 Iterator;	// it
 
 // ------------------------------------------------------------ Function signatures -- //
-
-// TODO Maybe we should rethink the naming conventions of this module ?
 
 // for every object on heap should be declared a void* del function with the VOID_ prefix
 #define iterAddHeap(i, data, delfunc) \
@@ -137,7 +140,7 @@ static void _delElem			(Iterable* i, uint32_t idx, bool to_free);
 
 Iterable* iterNew()	// New iterable
 {
-	Iterable* new = malloc_type(Iterable);
+	Iterable* new 	= malloc_type(Iterable);
 	new->elems 		= malloc_zero(IterElem);
 	new->len 		= 0;
 	new->cap 		= 0;
@@ -225,7 +228,8 @@ __forceinline void setIteratorMapFunc(Iterator* it, IterMapFunction_T func)
 
 __forceinline void* stopIterator(Iterator* it)
 {
-	free(it);	return ITERATION_STOP;
+	free(it);
+	return ITERATION_STOP;
 }
 
 // if current len is greater than new cap -> all items at the end that didn't fit will be discarded and new len will be equal to cap

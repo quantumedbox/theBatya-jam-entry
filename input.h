@@ -48,7 +48,7 @@ KeyBinding* keyLayout_processKey(KeyLayout* layout, int target_key)
 	while_iter(iter)
 	{
 		KeyBinding* bind = next_iteration_of_type(iter, KeyBinding);
-		check_stop_iteration(bind);
+		check_stop_iteration(iter, bind);
 
 		if (bind->key == target_key)
 			return bind;

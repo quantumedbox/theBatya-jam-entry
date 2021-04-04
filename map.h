@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <pthread.h>
 
 // Naive hashmap implementation
 
@@ -55,6 +57,9 @@ typedef struct
 
 	// item count
 	size_t 			len;
+
+	// mutex lock for accessing a map from multiple threads
+	pthread_mutex_t lock;
 }
 Map;
 
@@ -67,8 +72,8 @@ Map;
 		Map* 	mapNew				();
 		void 	mapAdd 				(Map*, key_t key,  data_t, uint8_t flag);
 		void 	mapAddByFunc		(Map*, HashFunc_T, data_t, uint8_t flag);
-	   	_Bool	mapHasKey			(Map*, key_t key);
-	   	_Bool 	mapHasKeyByFunc		(Map*, HashFunc_T, data_t);
+	   	bool	mapHasKey			(Map*, key_t key);
+	   	bool 	mapHasKeyByFunc		(Map*, HashFunc_T, data_t);
 	   	void 	mapDelKey			(Map*, key_t key);
 	   	void 	mapDelKeyByFunc		(Map*, HashFunc_T, data_t);
 		void 	mapSetDelFunc		(Map*, key_t key,  DelFunc_T);
@@ -82,9 +87,9 @@ static 	Bucket* _mapNewBucket		();
 static  void 	_mapExtend			(Map*);
 static  Bucket* _mapGetBucket		(Map*,    key_t key);
 static  Bucket* _mapGetBucketRecur	(Bucket*, key_t key);
-static 	_Bool 	_mapHasKeyRecur		(Bucket*, key_t key);
+static 	bool 	_mapHasKeyRecur		(Bucket*, key_t key);
 static 	void 	_mapAllocateBuckets	(Map*, 	 size_t n);
-static 	_Bool 	_mapAddRecur		(Bucket*, key_t key, data_t, uint8_t flag);
+static 	bool 	_mapAddRecur		(Bucket*, key_t key, data_t, uint8_t flag);
 static 	void 	_mapPrintRecur		(Bucket*);
 static  void 	_mapExtend			(Map*);
 static  void 	_mapClearStack		(Bucket*);
@@ -137,6 +142,8 @@ Map* mapNew()
 
 	_mapAllocateBuckets(new, MAP_INIT_CAPACITY);
 
+	pthread_mutex_init(&new->lock, NULL);
+
 	new->threshold 	= MAP_INIT_THRESHOLD;
 	new->len 		= 0;
 
@@ -161,6 +168,8 @@ static inline void _mapAllocateBuckets(Map* m, size_t n)
 
 void mapAdd(Map* m, key_t key, data_t data, uint8_t flag)
 {
+	pthread_mutex_lock(&m->lock);
+
 	uint32_t idx = key % m->capacity;
 
 	if (m->buckets[idx].next == NULL)
@@ -178,6 +187,8 @@ void mapAdd(Map* m, key_t key, data_t data, uint8_t flag)
 
 	if (((float)m->len / m->capacity) >= m->threshold)
 		_mapExtend(m);
+
+	pthread_mutex_unlock(&m->lock);
 }
 
 
@@ -197,7 +208,7 @@ __forceinline void _mapAddByFuncHeap(Map* m, HashFunc_T hashfunc, data_t data, D
 
 
 // Returns true if new bucket was added to the stack
-static inline _Bool _mapAddRecur(Bucket* b, key_t key, data_t data, uint8_t flag)
+static inline bool _mapAddRecur(Bucket* b, key_t key, data_t data, uint8_t flag)
 {
 	if (b->key == key) {
 		b->data = data;
@@ -232,23 +243,29 @@ __forceinline void mapDelKeyByFunc(Map* m, HashFunc_T hashfunc, data_t data)
 }
 
 
-_Bool mapHasKey(Map* m, key_t key)
+bool mapHasKey(Map* m, key_t key)
 {
+	bool return_data = false;
+
+	pthread_mutex_lock(&m->lock);
+
 	uint32_t idx = key % m->capacity;
 
 	if (m->buckets[idx].next != NULL)
-		return _mapHasKeyRecur(m->buckets[idx].next, key);
-	else
-		return false;
+		return_data = _mapHasKeyRecur(m->buckets[idx].next, key);
+
+	pthread_mutex_unlock(&m->lock);
+
+	return return_data;
 }
 
 
-__forceinline _Bool mapHasKeyByFunc(Map* m, HashFunc_T hashfunc, data_t data)
+__forceinline bool mapHasKeyByFunc(Map* m, HashFunc_T hashfunc, data_t data)
 {
 	return mapHasKey(m, hashfunc(data));
 }
 
-static inline _Bool _mapHasKeyRecur(Bucket* b, key_t key)
+static inline bool _mapHasKeyRecur(Bucket* b, key_t key)
 {
 	if (b->key == key)
 		return true;
@@ -314,6 +331,8 @@ static void _mapReallocateBucketRecur(Bucket* stack, Bucket* bucket)
 
 void mapDel(Map* m)
 {
+	// TODO Resolve the issue of deleting shared map
+
 	mapClear(m);
 	free(m->buckets);
 	free(m);
@@ -322,6 +341,8 @@ void mapDel(Map* m)
 
 void mapClear(Map* m)
 {
+	pthread_mutex_lock(&m->lock);
+
 	#pragma omp parallel for
 	for (register int i = 0; i < m->capacity; i++)
 	{
@@ -338,6 +359,8 @@ void mapClear(Map* m)
 		free(m->buckets);
 		_mapAllocateBuckets(m, MAP_INIT_CAPACITY);
 	}
+
+	pthread_mutex_unlock(&m->lock);
 }
 
 
@@ -359,9 +382,13 @@ static void _mapClearStack(Bucket* stack)
 
 void mapSetDelFunc(Map* m, key_t key, DelFunc_T delfunc)
 {
+	pthread_mutex_lock(&m->lock);
+
 	Bucket* target = _mapGetBucket(m, key);
 
 	target->delfunc = delfunc;
+
+	pthread_mutex_unlock(&m->lock);
 }
 
 

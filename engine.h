@@ -78,7 +78,7 @@ void delScene(Scene* scene)
 	while_iter(iter)
 	{
 		SceneObj* obj = next_iteration_of_type(iter, SceneObj);
-		check_stop_iteration(obj);
+		check_stop_iteration(iter, obj);
 
 		// logf("freeing scene_obj at %p\n", obj);
 
@@ -123,7 +123,7 @@ void renderScene(Scene* scene, Camera* camera)	// TODO Geometry context that is 
 	while_iter(iter)
 	{
 		SceneObj* obj = next_iteration_of_type(iter, SceneObj);
-		check_stop_iteration(obj);
+		check_stop_iteration(iter, obj);
 
 		switch (obj->type) {
 		case NestedSceneType:

@@ -71,20 +71,20 @@ void dissectArgs(int argc, const char** argv)
 
 int main(int argc, const char** argv)
 {
-	Map* map = mapNew();
+	// Map* map = mapNew();
 
-	getProfileTime();
-	for (int i = 1000000; i--;)
-	{
-		GameObj* obj = newGameObj();
-		mapAddByFuncHeap(map, hashAddress, obj, delGameObj);
-		// mapClear(map);
-	}
-	mapClear(map);
+	// getProfileTime();
+	// for (int i = 1000; i--;)
+	// {
+	// 	GameObj* obj = newGameObj();
+	// 	mapAddByFuncHeap(map, hashAddress, obj, delGameObj);
+	// 	// mapClear(map);
+	// }
+	// mapClear(map);
 
-	printProfileTime("iter score");
+	// printProfileTime("iter score");
 
-	mapPrint(map);
+	// mapPrint(map);
 
 	dissectArgs(argc, argv);
 
